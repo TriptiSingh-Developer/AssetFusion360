@@ -1,0 +1,39 @@
+
+# Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local datasets and generated outputs
+data/raw/
+data/bronze/
+data/silver/
+data/gold/
+data/reference/
+*.parquet
+*.delta
+
+# Machine learning experiments
+mlruns/
+mlartifacts/
+models/
+
+# Azure credentials and local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+local.settings.json
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
