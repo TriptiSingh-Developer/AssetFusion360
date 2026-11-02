@@ -37,3 +37,11 @@ Thumbs.db
 # Logs
 *.log
 logs/
+.venv/
+.env
+.env.*
+!.env.example
+*.pyc
+.ipynb_checkpoints/
+*.parquet.backup
+*.parquet.tmp

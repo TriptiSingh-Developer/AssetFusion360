@@ -1,0 +1,19 @@
+{
+  "total_assets": 148521,
+  "assets_with_workorders": 108257,
+  "total_workorders": 2231535,
+  "workorders_with_completion_date": 2205950,
+  "workorders_with_valid_duration": 1872891,
+  "average_valid_completion_hours": 1221.1801588471155,
+  "workorders_missing_valid_duration": 358644,
+  "matched_labor_entries": 3217345,
+  "unmatched_labor_entries": 13078,
+  "matched_labor_hours": 19823398.186101,
+  "net_matched_labor_cost": 470385892.4916941,
+  "matched_negative_cost_entries": 71368,
+  "assets_with_labor": 34842,
+  "assets_with_inspections": 3687,
+  "matched_inspections": 148235,
+  "unmatched_inspections": 4858,
+  "object_type_mismatches": 937
+}

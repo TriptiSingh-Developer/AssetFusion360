@@ -1,0 +1,50 @@
+{
+  "generated_at_utc": "2026-11-02T06:23:51.885386+00:00",
+  "assets": {
+    "raw_rows": 148522,
+    "canonical_rows": 148521,
+    "missing_asset_ids": 0,
+    "duplicate_asset_ids": [
+      "B223PA"
+    ]
+  },
+  "workorders": {
+    "batch_files": 447,
+    "total_rows": 2231535,
+    "expected_rows": 2231535,
+    "missing_workorder_ids": 0,
+    "duplicate_workorder_ids": 0,
+    "missing_asset_references": 0,
+    "matched_asset_references": 2231535,
+    "unmatched_asset_references": 0,
+    "asset_match_rate_percent": 100.0
+  },
+  "object_type_comparison": {
+    "matching_type_codes": 2230598,
+    "mismatching_type_codes": 937,
+    "missing_type_codes": 0,
+    "top_mismatching_type_pairs": [
+      {
+        "workorder_type": "S",
+        "asset_type": "A",
+        "count": 893
+      },
+      {
+        "workorder_type": "A",
+        "asset_type": "S",
+        "count": 34
+      },
+      {
+        "workorder_type": "T",
+        "asset_type": "F",
+        "count": 7
+      },
+      {
+        "workorder_type": "F",
+        "asset_type": "W",
+        "count": 3
+      }
+    ]
+  },
+  "top_unmatched_asset_references": []
+}
