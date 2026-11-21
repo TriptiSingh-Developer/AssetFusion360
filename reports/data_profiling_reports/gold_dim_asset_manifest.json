@@ -1,0 +1,18 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold",
+  "table": "dim_asset",
+  "status": "COMPLETED",
+  "source": "data/03_silver_cleaned_data/amps_assets/part-00000.parquet",
+  "output": "data/04_gold_analytics/dim_asset/part-00000.parquet",
+  "rows": 148522,
+  "columns": 10,
+  "unique_asset_identities": 148522,
+  "distinct_asset_codes": 148521,
+  "ambiguous_asset_codes": {
+    "B223PA": 2
+  },
+  "ambiguous_asset_rows": 2,
+  "placeholder_asset_rows": 1,
+  "created_utc": "2026-11-15T04:49:23.850947+00:00"
+}

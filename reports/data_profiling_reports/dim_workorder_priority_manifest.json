@@ -1,0 +1,13 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold",
+  "table": "dim_workorder_priority",
+  "status": "COMPLETED",
+  "rows": 11,
+  "columns": 4,
+  "parquet_files": 1,
+  "source_workorders": 2231535,
+  "missing_priority_rows": 994238,
+  "distinct_non_null_priorities": 10,
+  "created_utc": "2026-11-15T06:35:12.815316+00:00"
+}

@@ -1,0 +1,1032 @@
+{
+  "project": "AssetFusion360",
+  "document": "Gold Data Lineage",
+  "created_utc": "2026-11-15T06:50:32.662805+00:00",
+  "status": "PARTIAL_LINEAGE_DOCUMENTED",
+  "gold_tables": 17,
+  "combined_rows": 8855330,
+  "tables": [
+    {
+      "table": "dim_asset",
+      "layer": "Gold",
+      "rows": 148522,
+      "columns": 10,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/dim_asset",
+      "upstream_gold_tables": [],
+      "lineage_status": "UPSTREAM_SOURCE_VERIFICATION_PENDING",
+      "schema_fields": [
+        {
+          "name": "asset_identity",
+          "type": "int64"
+        },
+        {
+          "name": "asset_code",
+          "type": "string"
+        },
+        {
+          "name": "asset_status",
+          "type": "string"
+        },
+        {
+          "name": "parent_asset_code",
+          "type": "string"
+        },
+        {
+          "name": "commissioned_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "asset_value",
+          "type": "decimal128(20, 6)"
+        },
+        {
+          "name": "asset_code_match_count",
+          "type": "int32"
+        },
+        {
+          "name": "asset_code_ambiguous",
+          "type": "bool"
+        },
+        {
+          "name": "asset_code_placeholder",
+          "type": "bool"
+        },
+        {
+          "name": "source_file",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "table": "bridge_asset_code",
+      "layer": "Gold",
+      "rows": 148521,
+      "columns": 7,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/bridge_asset_code",
+      "upstream_gold_tables": [],
+      "lineage_status": "UPSTREAM_SOURCE_VERIFICATION_PENDING",
+      "schema_fields": [
+        {
+          "name": "asset_code",
+          "type": "string"
+        },
+        {
+          "name": "asset_match_count",
+          "type": "int32"
+        },
+        {
+          "name": "resolved_asset_identity",
+          "type": "int64"
+        },
+        {
+          "name": "candidate_asset_identities",
+          "type": "list<element: int64>"
+        },
+        {
+          "name": "resolution_status",
+          "type": "string"
+        },
+        {
+          "name": "is_ambiguous",
+          "type": "bool"
+        },
+        {
+          "name": "is_placeholder",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "table": "fact_workorders",
+      "layer": "Gold",
+      "rows": 2231535,
+      "columns": 23,
+      "parquet_files": 447,
+      "output_path": "data/04_gold_analytics/fact_workorders",
+      "upstream_gold_tables": [],
+      "lineage_status": "UPSTREAM_SOURCE_VERIFICATION_PENDING",
+      "schema_fields": [
+        {
+          "name": "workorder_identity",
+          "type": "int64"
+        },
+        {
+          "name": "workorder_code",
+          "type": "string"
+        },
+        {
+          "name": "asset_code",
+          "type": "string"
+        },
+        {
+          "name": "resolved_asset_identity",
+          "type": "int64"
+        },
+        {
+          "name": "asset_resolution_status",
+          "type": "string"
+        },
+        {
+          "name": "asset_reference_ambiguous",
+          "type": "bool"
+        },
+        {
+          "name": "asset_code_placeholder",
+          "type": "bool"
+        },
+        {
+          "name": "workorder_type",
+          "type": "string"
+        },
+        {
+          "name": "workorder_description",
+          "type": "string"
+        },
+        {
+          "name": "workorder_priority",
+          "type": "string"
+        },
+        {
+          "name": "workorder_class",
+          "type": "string"
+        },
+        {
+          "name": "job_type",
+          "type": "string"
+        },
+        {
+          "name": "workorder_date",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "reported_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "due_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "duration",
+          "type": "decimal128(20, 6)"
+        },
+        {
+          "name": "update_count",
+          "type": "int64"
+        },
+        {
+          "name": "silver_dq_issue",
+          "type": "bool"
+        },
+        {
+          "name": "source_file",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "table": "fact_labor",
+      "layer": "Gold",
+      "rows": 3230423,
+      "columns": 20,
+      "parquet_files": 647,
+      "output_path": "data/04_gold_analytics/fact_labor",
+      "upstream_gold_tables": [],
+      "lineage_status": "UPSTREAM_SOURCE_VERIFICATION_PENDING",
+      "schema_fields": [
+        {
+          "name": "labor_identity",
+          "type": "int64"
+        },
+        {
+          "name": "workorder_code",
+          "type": "string"
+        },
+        {
+          "name": "workorder_identity",
+          "type": "int64"
+        },
+        {
+          "name": "workorder_match_status",
+          "type": "string"
+        },
+        {
+          "name": "labor_date",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "labor_activity",
+          "type": "string"
+        },
+        {
+          "name": "trade",
+          "type": "string"
+        },
+        {
+          "name": "occupation_type",
+          "type": "string"
+        },
+        {
+          "name": "labor_hours",
+          "type": "decimal128(20, 6)"
+        },
+        {
+          "name": "labor_rate",
+          "type": "decimal128(20, 6)"
+        },
+        {
+          "name": "labor_cost",
+          "type": "decimal128(20, 6)"
+        },
+        {
+          "name": "correction_code",
+          "type": "string"
+        },
+        {
+          "name": "labor_description",
+          "type": "string"
+        },
+        {
+          "name": "labor_code",
+          "type": "string"
+        },
+        {
+          "name": "negative_hours_flag",
+          "type": "bool"
+        },
+        {
+          "name": "negative_cost_flag",
+          "type": "bool"
+        },
+        {
+          "name": "zero_rate_flag",
+          "type": "bool"
+        },
+        {
+          "name": "silver_dq_issue",
+          "type": "bool"
+        },
+        {
+          "name": "source_file",
+          "type": "string"
+        },
+        {
+          "name": "source_batch",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "table": "fact_transactions",
+      "layer": "Gold",
+      "rows": 755122,
+      "columns": 27,
+      "parquet_files": 152,
+      "output_path": "data/04_gold_analytics/fact_transactions",
+      "upstream_gold_tables": [],
+      "lineage_status": "UPSTREAM_SOURCE_VERIFICATION_PENDING",
+      "schema_fields": [
+        {
+          "name": "transaction_identity",
+          "type": "int64"
+        },
+        {
+          "name": "transaction_code",
+          "type": "string"
+        },
+        {
+          "name": "transaction_code_numeric",
+          "type": "int64"
+        },
+        {
+          "name": "transaction_description",
+          "type": "string"
+        },
+        {
+          "name": "transaction_type",
+          "type": "string"
+        },
+        {
+          "name": "transaction_status",
+          "type": "string"
+        },
+        {
+          "name": "request_code",
+          "type": "string"
+        },
+        {
+          "name": "request_identity",
+          "type": "int64"
+        },
+        {
+          "name": "from_entity",
+          "type": "string"
+        },
+        {
+          "name": "from_code",
+          "type": "string"
+        },
+        {
+          "name": "to_entity",
+          "type": "string"
+        },
+        {
+          "name": "to_code",
+          "type": "string"
+        },
+        {
+          "name": "transaction_date",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "update_count",
+          "type": "int64"
+        },
+        {
+          "name": "dq_transaction_code_invalid",
+          "type": "bool"
+        },
+        {
+          "name": "dq_transaction_identity_invalid",
+          "type": "bool"
+        },
+        {
+          "name": "dq_transaction_request_invalid",
+          "type": "bool"
+        },
+        {
+          "name": "dq_transaction_updatecount_invalid",
+          "type": "bool"
+        },
+        {
+          "name": "dq_transaction_date_invalid",
+          "type": "bool"
+        },
+        {
+          "name": "dq_transaction_created_invalid",
+          "type": "bool"
+        },
+        {
+          "name": "dq_transaction_updated_invalid",
+          "type": "bool"
+        },
+        {
+          "name": "silver_dq_issue",
+          "type": "bool"
+        },
+        {
+          "name": "source_file",
+          "type": "string"
+        },
+        {
+          "name": "source_batch",
+          "type": "string"
+        },
+        {
+          "name": "source_ingested_at",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "table": "fact_transaction_details",
+      "layer": "Gold",
+      "rows": 2301927,
+      "columns": 31,
+      "parquet_files": 461,
+      "output_path": "data/04_gold_analytics/fact_transaction_details",
+      "upstream_gold_tables": [],
+      "lineage_status": "UPSTREAM_SOURCE_VERIFICATION_PENDING",
+      "schema_fields": [
+        {
+          "name": "detail_identity",
+          "type": "int64"
+        },
+        {
+          "name": "transaction_code",
+          "type": "string"
+        },
+        {
+          "name": "transaction_identity",
+          "type": "int64"
+        },
+        {
+          "name": "transaction_match_status",
+          "type": "string"
+        },
+        {
+          "name": "workorder_code",
+          "type": "string"
+        },
+        {
+          "name": "workorder_identity",
+          "type": "int64"
+        },
+        {
+          "name": "workorder_match_status",
+          "type": "string"
+        },
+        {
+          "name": "transaction_line",
+          "type": "string"
+        },
+        {
+          "name": "detail_type",
+          "type": "string"
+        },
+        {
+          "name": "activity_code",
+          "type": "string"
+        },
+        {
+          "name": "detail_description",
+          "type": "string"
+        },
+        {
+          "name": "detail_date",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "detail_created_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "detail_updated_at",
+          "type": "timestamp[us]"
+        },
+        {
+          "name": "part_code",
+          "type": "string"
+        },
+        {
+          "name": "part_identity",
+          "type": "int64"
+        },
+        {
+          "name": "part_description",
+          "type": "string"
+        },
+        {
+          "name": "part_class",
+          "type": "string"
+        },
+        {
+          "name": "part_uom",
+          "type": "string"
+        },
+        {
+          "name": "store_code",
+          "type": "string"
+        },
+        {
+          "name": "bin_code",
+          "type": "string"
+        },
+        {
+          "name": "quantity",
+          "type": "decimal128(20, 6)"
+        },
+        {
+          "name": "unit_price",
+          "type": "decimal128(20, 6)"
+        },
+        {
+          "name": "average_price",
+          "type": "decimal128(20, 6)"
+        },
+        {
+          "name": "negative_quantity_flag",
+          "type": "bool"
+        },
+        {
+          "name": "negative_price_flag",
+          "type": "bool"
+        },
+        {
+          "name": "zero_quantity_flag",
+          "type": "bool"
+        },
+        {
+          "name": "zero_price_flag",
+          "type": "bool"
+        },
+        {
+          "name": "silver_dq_issue",
+          "type": "bool"
+        },
+        {
+          "name": "source_file",
+          "type": "string"
+        },
+        {
+          "name": "source_batch",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "table": "dim_date",
+      "layer": "Gold",
+      "rows": 9356,
+      "columns": 12,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/dim_date",
+      "upstream_gold_tables": [
+        "fact_workorders",
+        "fact_labor",
+        "fact_transactions",
+        "fact_transaction_details"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "date_key",
+          "type": "int32"
+        },
+        {
+          "name": "calendar_date",
+          "type": "date32[day]"
+        },
+        {
+          "name": "year",
+          "type": "int16"
+        },
+        {
+          "name": "quarter",
+          "type": "int8"
+        },
+        {
+          "name": "month",
+          "type": "int8"
+        },
+        {
+          "name": "month_name",
+          "type": "string"
+        },
+        {
+          "name": "year_month",
+          "type": "string"
+        },
+        {
+          "name": "day_of_month",
+          "type": "int8"
+        },
+        {
+          "name": "day_of_week",
+          "type": "int8"
+        },
+        {
+          "name": "day_name",
+          "type": "string"
+        },
+        {
+          "name": "iso_week",
+          "type": "int8"
+        },
+        {
+          "name": "is_weekend",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "table": "dim_workorder_type",
+      "layer": "Gold",
+      "rows": 7,
+      "columns": 3,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/dim_workorder_type",
+      "upstream_gold_tables": [
+        "fact_workorders"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "workorder_type_key",
+          "type": "int32"
+        },
+        {
+          "name": "workorder_type",
+          "type": "string"
+        },
+        {
+          "name": "source_workorder_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "dim_workorder_priority",
+      "layer": "Gold",
+      "rows": 11,
+      "columns": 4,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/dim_workorder_priority",
+      "upstream_gold_tables": [
+        "fact_workorders"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "workorder_priority_key",
+          "type": "int32"
+        },
+        {
+          "name": "workorder_priority",
+          "type": "string"
+        },
+        {
+          "name": "is_missing_priority",
+          "type": "bool"
+        },
+        {
+          "name": "source_workorder_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "dim_transaction_type",
+      "layer": "Gold",
+      "rows": 6,
+      "columns": 4,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/dim_transaction_type",
+      "upstream_gold_tables": [
+        "fact_transactions"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "transaction_type_key",
+          "type": "int32"
+        },
+        {
+          "name": "transaction_type",
+          "type": "string"
+        },
+        {
+          "name": "is_missing_type",
+          "type": "bool"
+        },
+        {
+          "name": "source_transaction_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "dim_transaction_status",
+      "layer": "Gold",
+      "rows": 3,
+      "columns": 4,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/dim_transaction_status",
+      "upstream_gold_tables": [
+        "fact_transactions"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "transaction_status_key",
+          "type": "int32"
+        },
+        {
+          "name": "transaction_status",
+          "type": "string"
+        },
+        {
+          "name": "is_missing_status",
+          "type": "bool"
+        },
+        {
+          "name": "source_transaction_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "dim_detail_type",
+      "layer": "Gold",
+      "rows": 6,
+      "columns": 4,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/dim_detail_type",
+      "upstream_gold_tables": [
+        "fact_transaction_details"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "detail_type_key",
+          "type": "int32"
+        },
+        {
+          "name": "detail_type",
+          "type": "string"
+        },
+        {
+          "name": "is_missing_type",
+          "type": "bool"
+        },
+        {
+          "name": "source_detail_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "dim_part",
+      "layer": "Gold",
+      "rows": 14423,
+      "columns": 8,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/dim_part",
+      "upstream_gold_tables": [
+        "fact_transaction_details"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "part_key",
+          "type": "int32"
+        },
+        {
+          "name": "part_code",
+          "type": "string"
+        },
+        {
+          "name": "part_identity",
+          "type": "int64"
+        },
+        {
+          "name": "part_description",
+          "type": "string"
+        },
+        {
+          "name": "part_class",
+          "type": "string"
+        },
+        {
+          "name": "part_uom",
+          "type": "string"
+        },
+        {
+          "name": "is_missing_part",
+          "type": "bool"
+        },
+        {
+          "name": "source_detail_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "gold_workorder_monthly_kpis",
+      "layer": "Gold",
+      "rows": 1280,
+      "columns": 9,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/gold_workorder_monthly_kpis",
+      "upstream_gold_tables": [
+        "fact_workorders"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "reporting_month",
+          "type": "string"
+        },
+        {
+          "name": "workorder_type",
+          "type": "string"
+        },
+        {
+          "name": "workorder_count",
+          "type": "int64"
+        },
+        {
+          "name": "completion_timestamp_present_count",
+          "type": "int64"
+        },
+        {
+          "name": "completion_timestamp_missing_count",
+          "type": "int64"
+        },
+        {
+          "name": "priority_present_count",
+          "type": "int64"
+        },
+        {
+          "name": "priority_missing_count",
+          "type": "int64"
+        },
+        {
+          "name": "ambiguous_asset_mapping_count",
+          "type": "int64"
+        },
+        {
+          "name": "unique_asset_mapping_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "gold_labor_monthly_kpis",
+      "layer": "Gold",
+      "rows": 232,
+      "columns": 8,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/gold_labor_monthly_kpis",
+      "upstream_gold_tables": [
+        "fact_labor"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "reporting_month",
+          "type": "string"
+        },
+        {
+          "name": "workorder_match_status",
+          "type": "string"
+        },
+        {
+          "name": "labor_record_count",
+          "type": "int64"
+        },
+        {
+          "name": "total_labor_hours",
+          "type": "decimal128(30, 6)"
+        },
+        {
+          "name": "total_labor_cost",
+          "type": "decimal128(30, 6)"
+        },
+        {
+          "name": "negative_hours_count",
+          "type": "int64"
+        },
+        {
+          "name": "negative_cost_count",
+          "type": "int64"
+        },
+        {
+          "name": "zero_rate_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "gold_transaction_monthly_kpis",
+      "layer": "Gold",
+      "rows": 1689,
+      "columns": 7,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/gold_transaction_monthly_kpis",
+      "upstream_gold_tables": [
+        "fact_transactions"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "reporting_month",
+          "type": "string"
+        },
+        {
+          "name": "transaction_type",
+          "type": "string"
+        },
+        {
+          "name": "transaction_status",
+          "type": "string"
+        },
+        {
+          "name": "transaction_count",
+          "type": "int64"
+        },
+        {
+          "name": "missing_date_count",
+          "type": "int64"
+        },
+        {
+          "name": "invalid_date_flag_count",
+          "type": "int64"
+        },
+        {
+          "name": "silver_dq_issue_count",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "table": "gold_material_monthly_kpis",
+      "layer": "Gold",
+      "rows": 12267,
+      "columns": 16,
+      "parquet_files": 1,
+      "output_path": "data/04_gold_analytics/gold_material_monthly_kpis",
+      "upstream_gold_tables": [
+        "fact_transaction_details"
+      ],
+      "lineage_status": "GOLD_DEPENDENCY_DOCUMENTED",
+      "schema_fields": [
+        {
+          "name": "reporting_month",
+          "type": "string"
+        },
+        {
+          "name": "detail_type",
+          "type": "string"
+        },
+        {
+          "name": "part_uom",
+          "type": "string"
+        },
+        {
+          "name": "transaction_match_status",
+          "type": "string"
+        },
+        {
+          "name": "workorder_match_status",
+          "type": "string"
+        },
+        {
+          "name": "material_detail_count",
+          "type": "int64"
+        },
+        {
+          "name": "total_signed_quantity",
+          "type": "decimal128(30, 6)"
+        },
+        {
+          "name": "quantity_present_count",
+          "type": "int64"
+        },
+        {
+          "name": "quantity_missing_count",
+          "type": "int64"
+        },
+        {
+          "name": "negative_quantity_count",
+          "type": "int64"
+        },
+        {
+          "name": "zero_quantity_count",
+          "type": "int64"
+        },
+        {
+          "name": "unit_price_present_count",
+          "type": "int64"
+        },
+        {
+          "name": "unit_price_missing_count",
+          "type": "int64"
+        },
+        {
+          "name": "negative_unit_price_count",
+          "type": "int64"
+        },
+        {
+          "name": "zero_unit_price_count",
+          "type": "int64"
+        },
+        {
+          "name": "average_price_missing_count",
+          "type": "int64"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Core Gold upstream Silver and Bronze paths require verification against their source manifests.",
+    "Gold dependencies describe established table-level transformation inputs, not field-level lineage.",
+    "This report does not certify Azure or Fabric deployment."
+  ]
+}

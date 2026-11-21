@@ -1,0 +1,270 @@
+{
+  "project": "AssetFusion360",
+  "validation_step": "4.7D",
+  "status": "COMPLETED",
+  "spark_version": "3.5.7",
+  "source_files": {
+    "inspections": "data\\01_raw_source_data\\supplementary_inspection_data\\Parks_Inspections.csv",
+    "assets": "data\\01_raw_source_data\\nyc_parks_asset_management\\AMPS_Assets.csv"
+  },
+  "source_counts": {
+    "inspection_records": 153093,
+    "asset_records": 148522
+  },
+  "inspection_date_validation": {
+    "Date": {
+      "column_name": "Date",
+      "total_rows": 153093,
+      "populated_records": 153093,
+      "missing_or_blank_records": 0,
+      "parseable_records": 153093,
+      "unparseable_records": 0,
+      "parseable_percentage": 100.0,
+      "earliest_parsed_date": "1999-02-23 00:00:00",
+      "latest_parsed_date": "2026-07-31 00:00:00",
+      "raw_date_samples": [
+        "2020 Jul 22 12:00:00 AM",
+        "2020 Jul 23 12:00:00 AM",
+        "2023 Sep 28 12:00:00 AM",
+        "2023 Oct 03 12:00:00 AM",
+        "2023 Oct 05 12:00:00 AM",
+        "2018 May 03 12:00:00 AM",
+        "2017 Sep 13 12:00:00 AM",
+        "2024 Jul 20 12:00:00 AM"
+      ],
+      "unparseable_examples": [],
+      "tested_formats": [
+        "yyyy MMM dd hh:mm:ss a",
+        "yyyy MMM d hh:mm:ss a",
+        "yyyy MMM dd h:mm:ss a",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS",
+        "yyyy-MM-dd'T'HH:mm:ss",
+        "yyyy-MM-dd",
+        "MM/dd/yyyy HH:mm:ss",
+        "MM/dd/yyyy hh:mm:ss a",
+        "M/d/yyyy h:mm:ss a",
+        "MM/dd/yyyy",
+        "M/d/yyyy",
+        "MMM d yyyy h:mm:ss a",
+        "MMM d yyyy"
+      ]
+    },
+    "inspAddedDate": {
+      "column_name": "inspAddedDate",
+      "total_rows": 153093,
+      "populated_records": 111367,
+      "missing_or_blank_records": 41726,
+      "parseable_records": 111367,
+      "unparseable_records": 0,
+      "parseable_percentage": 100.0,
+      "earliest_parsed_date": "2008-01-10 19:37:00",
+      "latest_parsed_date": "2026-07-31 17:09:00",
+      "raw_date_samples": [
+        "2020 Jul 15 06:55:00 PM",
+        "2020 Jul 28 01:17:00 PM",
+        "2020 Jul 28 05:17:00 PM",
+        "2020 Jul 29 12:19:00 PM",
+        "2020 Jul 20 01:10:00 PM",
+        "2020 Jul 20 02:50:00 PM",
+        "2020 Jul 30 12:38:00 PM",
+        "2020 Jul 30 03:20:00 PM"
+      ],
+      "unparseable_examples": [],
+      "tested_formats": [
+        "yyyy MMM dd hh:mm:ss a",
+        "yyyy MMM d hh:mm:ss a",
+        "yyyy MMM dd h:mm:ss a",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS",
+        "yyyy-MM-dd'T'HH:mm:ss",
+        "yyyy-MM-dd",
+        "MM/dd/yyyy HH:mm:ss",
+        "MM/dd/yyyy hh:mm:ss a",
+        "M/d/yyyy h:mm:ss a",
+        "MM/dd/yyyy",
+        "M/d/yyyy",
+        "MMM d yyyy h:mm:ss a",
+        "MMM d yyyy"
+      ]
+    }
+  },
+  "asset_business_key_validation": {
+    "total_asset_records": 148522,
+    "populated_asset_codes": 148522,
+    "missing_asset_codes": 0,
+    "distinct_asset_codes": 148521,
+    "duplicate_excess_rows": 1,
+    "duplicate_asset_code_examples": [
+      {
+        "asset_code": "B223PA",
+        "record_count": 2
+      }
+    ]
+  },
+  "inspection_asset_relationship": {
+    "parent_column": "OBJ_CODE",
+    "child_column": "Prop ID",
+    "exact_match": {
+      "matching_method": "Trim only; case-sensitive",
+      "total_inspection_records": 153093,
+      "missing_property_references": 0,
+      "populated_property_references": 153093,
+      "matched_inspection_records": 148235,
+      "unmatched_inspection_records": 4858,
+      "match_percentage_of_populated": 96.83,
+      "match_percentage_of_all_records": 96.83,
+      "distinct_matched_property_codes": 3687,
+      "distinct_unmatched_property_codes": 355,
+      "unmatched_property_examples": [
+        {
+          "prop_id": "M010-ZN12&13",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "M010-ZN24&25",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "X039-G01",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "B028-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "B057-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "M010-ZN02&4",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "M010-ZN10&11",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q010-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q015-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q024-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q411-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R013-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R022-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R104-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "X092-G01",
+          "inspection_records": 54
+        }
+      ]
+    },
+    "case_normalized_match": {
+      "matching_method": "Trim and uppercase",
+      "total_inspection_records": 153093,
+      "missing_property_references": 0,
+      "populated_property_references": 153093,
+      "matched_inspection_records": 148235,
+      "unmatched_inspection_records": 4858,
+      "match_percentage_of_populated": 96.83,
+      "match_percentage_of_all_records": 96.83,
+      "distinct_matched_property_codes": 3687,
+      "distinct_unmatched_property_codes": 355,
+      "unmatched_property_examples": [
+        {
+          "prop_id": "M010-ZN12&13",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "M010-ZN24&25",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "X039-G01",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "B028-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "B057-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "M010-ZN02&4",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "M010-ZN10&11",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q010-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q015-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q024-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q411-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R013-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R022-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R104-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "X092-G01",
+          "inspection_records": 54
+        }
+      ]
+    }
+  },
+  "integration_decision": "PENDING BUSINESS VALIDATION",
+  "notes": [
+    "Both source CSV files remain unchanged.",
+    "Source identifiers were not fabricated.",
+    "Duplicate parent asset codes were deduplicated.",
+    "Matching is based on string identifiers.",
+    "Matching does not prove equal entity grain.",
+    "Property identifiers may represent park properties rather than individual assets.",
+    "No joins were persisted.",
+    "No missing dates were imputed.",
+    "Date formats are tested using safe parsing."
+  ],
+  "last_updated_utc": "2026-11-15T01:37:52.403142+00:00"
+}

@@ -1,0 +1,442 @@
+{
+  "project": "AssetFusion360",
+  "profiling_step": "4.7C",
+  "dataset": "Supplementary Inspection Data",
+  "status": "COMPLETED",
+  "profile_timestamp_utc": "2026-11-15T00:54:18.397772+00:00",
+  "source_file": "data\\01_raw_source_data\\supplementary_inspection_data\\Parks_Inspections.csv",
+  "spark_version": "3.5.7",
+  "total_source_files": 1,
+  "total_records": 153093,
+  "total_columns": 20,
+  "source_columns": [
+    "Prop ID",
+    "AMPSDistrict",
+    "Inspection ID",
+    "Season",
+    "Round",
+    "Date",
+    "BeginInspection",
+    "EndInspection",
+    "Inspection Year",
+    "inspector",
+    "inspector2",
+    "Overall Condition",
+    "Cleanliness",
+    "Safety Condition",
+    "Structural Condition",
+    "VisitorCount",
+    "Closed?",
+    "Comments",
+    "InspectionType",
+    "inspAddedDate"
+  ],
+  "source_schema": [
+    {
+      "column_name": "Prop ID",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "AMPSDistrict",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Inspection ID",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Season",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Round",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Date",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "BeginInspection",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "EndInspection",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Inspection Year",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "inspector",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "inspector2",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Overall Condition",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Cleanliness",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Safety Condition",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Structural Condition",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "VisitorCount",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Closed?",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Comments",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "InspectionType",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "inspAddedDate",
+      "data_type": "string",
+      "nullable": true
+    }
+  ],
+  "column_quality": [
+    {
+      "column_name": "Prop ID",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "AMPSDistrict",
+      "missing_count": 468,
+      "missing_percentage": 0.31,
+      "non_missing_count": 152625,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Inspection ID",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Season",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Round",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Date",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "BeginInspection",
+      "missing_count": 42,
+      "missing_percentage": 0.03,
+      "non_missing_count": 153051,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "EndInspection",
+      "missing_count": 31,
+      "missing_percentage": 0.02,
+      "non_missing_count": 153062,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Inspection Year",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "inspector",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "inspector2",
+      "missing_count": 150478,
+      "missing_percentage": 98.29,
+      "non_missing_count": 2615,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Overall Condition",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Cleanliness",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Safety Condition",
+      "missing_count": 151995,
+      "missing_percentage": 99.28,
+      "non_missing_count": 1098,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Structural Condition",
+      "missing_count": 151995,
+      "missing_percentage": 99.28,
+      "non_missing_count": 1098,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "VisitorCount",
+      "missing_count": 83477,
+      "missing_percentage": 54.53,
+      "non_missing_count": 69616,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Closed?",
+      "missing_count": 144646,
+      "missing_percentage": 94.48,
+      "non_missing_count": 8447,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "Comments",
+      "missing_count": 120505,
+      "missing_percentage": 78.71,
+      "non_missing_count": 32588,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "InspectionType",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 153093,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    },
+    {
+      "column_name": "inspAddedDate",
+      "missing_count": 41726,
+      "missing_percentage": 27.26,
+      "non_missing_count": 111367,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "na_placeholder_count": 0
+    }
+  ],
+  "discovered_business_fields": {
+    "inspection_identifiers": [
+      "Inspection ID"
+    ],
+    "asset_references": [],
+    "inspection_dates": [
+      "Date",
+      "inspAddedDate"
+    ],
+    "inspection_outcomes": [
+      "Overall Condition",
+      "Safety Condition",
+      "Structural Condition"
+    ],
+    "maintenance_fields": [],
+    "geographic_fields": []
+  },
+  "candidate_identifier_columns": [
+    "Inspection ID"
+  ],
+  "identifier_validation": {
+    "Inspection ID": {
+      "non_missing_records": 153093,
+      "missing_records": 0,
+      "distinct_identifiers": 153093,
+      "duplicate_excess_rows": 0,
+      "is_candidate_record_key": true
+    }
+  },
+  "numeric_quality": {
+    "AMPSDistrict": {
+      "populated_records": 152625,
+      "numeric_format_records": 147785,
+      "non_numeric_records": 4840,
+      "numeric_coverage_percentage": 96.83,
+      "minimum": 0.0,
+      "maximum": 19.0,
+      "is_numeric_candidate": true
+    },
+    "Inspection ID": {
+      "populated_records": 153093,
+      "numeric_format_records": 153093,
+      "non_numeric_records": 0,
+      "numeric_coverage_percentage": 100.0,
+      "minimum": 5.0,
+      "maximum": 199615.0,
+      "is_numeric_candidate": true
+    },
+    "Round": {
+      "populated_records": 153093,
+      "numeric_format_records": 153093,
+      "non_numeric_records": 0,
+      "numeric_coverage_percentage": 100.0,
+      "minimum": 0.0,
+      "maximum": 6.0,
+      "is_numeric_candidate": true
+    },
+    "Inspection Year": {
+      "populated_records": 153093,
+      "numeric_format_records": 153093,
+      "non_numeric_records": 0,
+      "numeric_coverage_percentage": 100.0,
+      "minimum": 1999.0,
+      "maximum": 2026.0,
+      "is_numeric_candidate": true
+    },
+    "inspector": {
+      "populated_records": 153093,
+      "numeric_format_records": 153093,
+      "non_numeric_records": 0,
+      "numeric_coverage_percentage": 100.0,
+      "minimum": 1.0,
+      "maximum": 64.0,
+      "is_numeric_candidate": true
+    },
+    "inspector2": {
+      "populated_records": 2615,
+      "numeric_format_records": 2615,
+      "non_numeric_records": 0,
+      "numeric_coverage_percentage": 100.0,
+      "minimum": 4.0,
+      "maximum": 65.0,
+      "is_numeric_candidate": true
+    },
+    "VisitorCount": {
+      "populated_records": 69616,
+      "numeric_format_records": 69616,
+      "non_numeric_records": 0,
+      "numeric_coverage_percentage": 100.0,
+      "minimum": -1.0,
+      "maximum": 11041.0,
+      "is_numeric_candidate": true
+    }
+  },
+  "date_quality": {
+    "Date": {
+      "populated_records": 153093,
+      "parseable_records": 0,
+      "unparseable_records": 153093,
+      "parseable_percentage": 0.0,
+      "earliest_parsed_value": null,
+      "latest_parsed_value": null,
+      "note": "Unparseable means no configured date format matched; other valid formats may exist."
+    },
+    "inspAddedDate": {
+      "populated_records": 111367,
+      "parseable_records": 0,
+      "unparseable_records": 111367,
+      "parseable_percentage": 0.0,
+      "earliest_parsed_value": null,
+      "latest_parsed_value": null,
+      "note": "Unparseable means no configured date format matched; other valid formats may exist."
+    }
+  },
+  "notes": [
+    "Original CSV remains unchanged.",
+    "All source fields were read as strings.",
+    "Missing and placeholder values are separate.",
+    "No identifiers were fabricated.",
+    "No inspection-to-AMPS join was performed.",
+    "Numeric and date conversions were tested only.",
+    "Source provenance and business meanings require separate validation."
+  ],
+  "last_updated_utc": "2026-11-15T00:54:18.397772+00:00"
+}

@@ -1,0 +1,275 @@
+{
+  "project": "AssetFusion360",
+  "profiling_step": "4.6D",
+  "dataset": "NYC Parks AMPS Transactions - CSV Batches",
+  "source_directory": "data\\01_raw_source_data\\nyc_parks_asset_management\\transactions_batches",
+  "profile_timestamp_utc": "2026-11-15T00:24:46.191330+00:00",
+  "spark_version": "3.5.7",
+  "total_source_files": 152,
+  "total_records": 755122,
+  "total_columns": 14,
+  "csv_reader_configuration": {
+    "header": true,
+    "quote": "\"",
+    "escape": "\"",
+    "multiLine": true,
+    "inferSchema": false,
+    "mode": "FAILFAST"
+  },
+  "source_schema": [
+    {
+      "column_name": "tra_code",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_desc",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_type",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_date",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_req",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_status",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_fromentity",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_fromcode",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_toentity",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_tocode",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_updatecount",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_created",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_updated",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "tra_sqlidentity",
+      "data_type": "string",
+      "nullable": true
+    }
+  ],
+  "column_quality": [
+    {
+      "column_name": "tra_code",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_desc",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 1,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_type",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_date",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_req",
+      "source_data_type": "string",
+      "missing_count": 593470,
+      "non_missing_count": 161652,
+      "missing_percentage": 78.59,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_status",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_fromentity",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_fromcode",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_toentity",
+      "source_data_type": "string",
+      "missing_count": 27469,
+      "non_missing_count": 727653,
+      "missing_percentage": 3.64,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_tocode",
+      "source_data_type": "string",
+      "missing_count": 27469,
+      "non_missing_count": 727653,
+      "missing_percentage": 3.64,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_updatecount",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_created",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_updated",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "tra_sqlidentity",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 755122,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    }
+  ],
+  "potential_identifier_columns": [
+    "tra_code",
+    "tra_sqlidentity"
+  ],
+  "potential_relationship_columns": [
+    "tra_code",
+    "tra_fromcode",
+    "tra_tocode",
+    "tra_sqlidentity"
+  ],
+  "identifier_validation": {
+    "tra_code": {
+      "total_records": 755122,
+      "non_missing_records": 755122,
+      "missing_records": 0,
+      "distinct_identifier_count": 755122,
+      "duplicate_excess_rows": 0,
+      "is_complete": true,
+      "is_unique": true,
+      "is_candidate_record_key": true,
+      "note": "A complete and unique identifier is only a structurally valid candidate key. Business and relationship validation are still required."
+    },
+    "tra_sqlidentity": {
+      "total_records": 755122,
+      "non_missing_records": 755122,
+      "missing_records": 0,
+      "distinct_identifier_count": 755122,
+      "duplicate_excess_rows": 0,
+      "is_complete": true,
+      "is_unique": true,
+      "is_candidate_record_key": true,
+      "note": "A complete and unique identifier is only a structurally valid candidate key. Business and relationship validation are still required."
+    }
+  },
+  "sample_inspection": {
+    "sample_count_requested": 5,
+    "sample_columns": [
+      "tra_code",
+      "tra_desc",
+      "tra_type",
+      "tra_date",
+      "tra_req",
+      "tra_status",
+      "tra_fromentity",
+      "tra_fromcode"
+    ]
+  },
+  "notes": [
+    "All CSV headers validated before loading.",
+    "Source columns initially read as strings.",
+    "Embedded double quotes handled explicitly.",
+    "Multiline quoted text supported.",
+    "Dash placeholders counted separately.",
+    "Original source CSV files preserved.",
+    "Cross-dataset joins are not yet validated."
+  ]
+}

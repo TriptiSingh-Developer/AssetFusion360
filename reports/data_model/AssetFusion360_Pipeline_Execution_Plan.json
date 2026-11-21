@@ -1,0 +1,242 @@
+{
+  "project": "AssetFusion360",
+  "document": "Pipeline Execution Plan",
+  "created_utc": "2026-11-15T06:58:18.368559+00:00",
+  "status": "PROPOSED_NOT_EXECUTED",
+  "stage_order": [
+    "Bronze",
+    "Silver",
+    "Gold"
+  ],
+  "stages": [
+    {
+      "stage": "Bronze",
+      "stage_order": 1,
+      "scripts": [
+        {
+          "path": "src/assetfusion360/pipelines/bronze_assets_ingestion.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/bronze_labor_ingestion.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/bronze_transaction_details_ingestion.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/bronze_transactions_ingestion.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/bronze_workorders_ingestion.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "Silver",
+      "stage_order": 2,
+      "scripts": [
+        {
+          "path": "src/assetfusion360/pipelines/silver_assets_transformation.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_labor_transformation.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_transaction_details_transformation.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_transactions_transformation.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_workorders_transformation.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "Gold",
+      "stage_order": 3,
+      "scripts": [
+        {
+          "path": "src/assetfusion360/pipelines/gold_asset_bridge.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_asset.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_date.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_detail_type.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_part.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_transaction_status.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_transaction_type.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_workorder_priority.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_workorder_type.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_labor.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_transaction_details.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_transactions.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_workorders.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_labor_monthly_kpis.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_material_monthly_kpis.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_transaction_monthly_kpis.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_workorder_monthly_kpis.py",
+          "has_main_guard": true,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "Other",
+      "stage_order": 4,
+      "scripts": [
+        {
+          "path": "src/assetfusion360/pipelines/__init__.py",
+          "has_main_guard": false,
+          "execution_status": "NOT_TESTED",
+          "dependency_status": "NOT_VERIFIED",
+          "rerun_safety": "NOT_VERIFIED"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Stage order is conceptual.",
+    "Alphabetical script order is not a verified dependency order.",
+    "Do not execute every script automatically.",
+    "Gold dimensions and facts may have interdependencies.",
+    "Existing published outputs must not be overwritten.",
+    "Verify input/output contracts before orchestration.",
+    "Test safe reruns before cloud deployment."
+  ]
+}

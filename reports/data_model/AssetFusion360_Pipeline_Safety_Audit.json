@@ -1,0 +1,385 @@
+{
+  "project": "AssetFusion360",
+  "created_utc": "2026-11-15T06:59:00.117634+00:00",
+  "status": "STATIC_SAFETY_REVIEW_COMPLETE",
+  "total_scripts": 28,
+  "indicator_summary": {
+    "existing_output_guard": 27,
+    "staging": 27,
+    "safe_publish": 27,
+    "manifest": 27,
+    "exception_handling": 10
+  },
+  "scripts": [
+    {
+      "script": "src/assetfusion360/pipelines/bronze_assets_ingestion.py",
+      "layer": "Bronze",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_labor_ingestion.py",
+      "layer": "Bronze",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_transaction_details_ingestion.py",
+      "layer": "Bronze",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_transactions_ingestion.py",
+      "layer": "Bronze",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_workorders_ingestion.py",
+      "layer": "Bronze",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_assets_transformation.py",
+      "layer": "Silver",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_labor_transformation.py",
+      "layer": "Silver",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_transaction_details_transformation.py",
+      "layer": "Silver",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_transactions_transformation.py",
+      "layer": "Silver",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_workorders_transformation.py",
+      "layer": "Silver",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": true
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_asset_bridge.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_asset.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_date.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_detail_type.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_part.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_transaction_status.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_transaction_type.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_workorder_priority.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_workorder_type.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_fact_labor.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_fact_transaction_details.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_fact_transactions.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_fact_workorders.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_labor_monthly_kpis.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_material_monthly_kpis.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_transaction_monthly_kpis.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_workorder_monthly_kpis.py",
+      "layer": "Gold",
+      "indicators": {
+        "existing_output_guard": true,
+        "staging": true,
+        "safe_publish": true,
+        "manifest": true,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/__init__.py",
+      "layer": "Other",
+      "indicators": {
+        "existing_output_guard": false,
+        "staging": false,
+        "safe_publish": false,
+        "manifest": false,
+        "exception_handling": false
+      },
+      "safe_rerun_verified": false,
+      "dependency_order_verified": false
+    }
+  ],
+  "limitations": [
+    "Code patterns do not prove safe rerun behavior.",
+    "Existing-output guards may apply only to some outputs.",
+    "Dependency order has not been execution-tested.",
+    "No pipelines were executed by this audit."
+  ]
+}

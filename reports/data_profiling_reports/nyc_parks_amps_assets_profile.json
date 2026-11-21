@@ -1,0 +1,896 @@
+{
+  "project": "AssetFusion360",
+  "dataset": "NYC Parks AMPS Assets",
+  "profiling_step": "4.5",
+  "source_file": "data\\01_raw_source_data\\nyc_parks_asset_management\\AMPS_Assets.csv",
+  "profile_timestamp_utc": "2026-11-14T23:33:37.462891+00:00",
+  "spark_version": "3.5.7",
+  "total_rows": 148522,
+  "total_columns": 29,
+  "schema": [
+    {
+      "name": "OBJ_OBTYPE",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_CODE",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_DESC",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_CLASS",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_CATEGORY",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_POSITION",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_PARENT",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_MANUFACT",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_MRC",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_SERIALNO",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_STATUS",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_COMMISS",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_WITHDRAW",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_RECORD",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_NOTUSED",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_MANUFACTMODEL",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_VALUE",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_UPDATED",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_UPDATECOUNT",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_GISOBJID",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_SQLIDENTITY",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_GISLAYER",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_XLOCATION",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_YLOCATION",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_UDFCHAR01",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_UDFCHAR02",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_UDFCHAR05",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_UDFCHAR06",
+      "type": "string",
+      "nullable": true
+    },
+    {
+      "name": "OBJ_CREATED",
+      "type": "string",
+      "nullable": true
+    }
+  ],
+  "column_quality": [
+    {
+      "column_name": "OBJ_OBTYPE",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 148522
+    },
+    {
+      "column_name": "OBJ_CODE",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 148522
+    },
+    {
+      "column_name": "OBJ_DESC",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 148522
+    },
+    {
+      "column_name": "OBJ_CLASS",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 40301,
+      "missing_percentage": 27.13,
+      "non_missing_count": 108221
+    },
+    {
+      "column_name": "OBJ_CATEGORY",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 136367,
+      "missing_percentage": 91.82,
+      "non_missing_count": 12155
+    },
+    {
+      "column_name": "OBJ_POSITION",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 147425,
+      "missing_percentage": 99.26,
+      "non_missing_count": 1097
+    },
+    {
+      "column_name": "OBJ_PARENT",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 115359,
+      "missing_percentage": 77.67,
+      "non_missing_count": 33163
+    },
+    {
+      "column_name": "OBJ_MANUFACT",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 143403,
+      "missing_percentage": 96.55,
+      "non_missing_count": 5119
+    },
+    {
+      "column_name": "OBJ_MRC",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 90,
+      "missing_percentage": 0.06,
+      "non_missing_count": 148432
+    },
+    {
+      "column_name": "OBJ_SERIALNO",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 110715,
+      "missing_percentage": 74.54,
+      "non_missing_count": 37807
+    },
+    {
+      "column_name": "OBJ_STATUS",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 148522
+    },
+    {
+      "column_name": "OBJ_COMMISS",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 1,
+      "missing_percentage": 0.0,
+      "non_missing_count": 148521
+    },
+    {
+      "column_name": "OBJ_WITHDRAW",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 84198,
+      "missing_percentage": 56.69,
+      "non_missing_count": 64324
+    },
+    {
+      "column_name": "OBJ_RECORD",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 148522
+    },
+    {
+      "column_name": "OBJ_NOTUSED",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 38918,
+      "missing_percentage": 26.2,
+      "non_missing_count": 109604
+    },
+    {
+      "column_name": "OBJ_MANUFACTMODEL",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 112642,
+      "missing_percentage": 75.84,
+      "non_missing_count": 35880
+    },
+    {
+      "column_name": "OBJ_VALUE",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 147593,
+      "missing_percentage": 99.37,
+      "non_missing_count": 929
+    },
+    {
+      "column_name": "OBJ_UPDATED",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 38918,
+      "missing_percentage": 26.2,
+      "non_missing_count": 109604
+    },
+    {
+      "column_name": "OBJ_UPDATECOUNT",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 148522
+    },
+    {
+      "column_name": "OBJ_GISOBJID",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 97895,
+      "missing_percentage": 65.91,
+      "non_missing_count": 50627
+    },
+    {
+      "column_name": "OBJ_SQLIDENTITY",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 148522
+    },
+    {
+      "column_name": "OBJ_GISLAYER",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 98023,
+      "missing_percentage": 66.0,
+      "non_missing_count": 50499
+    },
+    {
+      "column_name": "OBJ_XLOCATION",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 98023,
+      "missing_percentage": 66.0,
+      "non_missing_count": 50499
+    },
+    {
+      "column_name": "OBJ_YLOCATION",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 98023,
+      "missing_percentage": 66.0,
+      "non_missing_count": 50499
+    },
+    {
+      "column_name": "OBJ_UDFCHAR01",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 143315,
+      "missing_percentage": 96.49,
+      "non_missing_count": 5207
+    },
+    {
+      "column_name": "OBJ_UDFCHAR02",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 145285,
+      "missing_percentage": 97.82,
+      "non_missing_count": 3237
+    },
+    {
+      "column_name": "OBJ_UDFCHAR05",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 124624,
+      "missing_percentage": 83.91,
+      "non_missing_count": 23898
+    },
+    {
+      "column_name": "OBJ_UDFCHAR06",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 147567,
+      "missing_percentage": 99.36,
+      "non_missing_count": 955
+    },
+    {
+      "column_name": "OBJ_CREATED",
+      "source_spark_type": "string",
+      "nullable": true,
+      "missing_count": 73936,
+      "missing_percentage": 49.78,
+      "non_missing_count": 74586
+    }
+  ],
+  "asset_identifier_profile": {
+    "candidate_identifier": "OBJ_CODE",
+    "non_empty_records": 148522,
+    "distinct_identifiers": 148521,
+    "duplicate_excess_rows": 1,
+    "is_unique": false
+  },
+  "duplicate_identifier_details": {
+    "duplicate_identifier_groups": 1,
+    "duplicate_codes": [
+      {
+        "asset_code": "B223PA",
+        "occurrences": 2
+      }
+    ],
+    "duplicate_records_sample": [
+      {
+        "OBJ_CODE": "B223PA",
+        "OBJ_OBTYPE": "S",
+        "OBJ_DESC": "Rodney Park Center - Retired(Duplicated)",
+        "OBJ_CLASS": null,
+        "OBJ_STATUS": "D",
+        "OBJ_SQLIDENTITY": "5514"
+      },
+      {
+        "OBJ_CODE": "B223PA",
+        "OBJ_OBTYPE": "S",
+        "OBJ_DESC": "Rodney Park Center",
+        "OBJ_CLASS": "PARK",
+        "OBJ_STATUS": "I",
+        "OBJ_SQLIDENTITY": "6133"
+      }
+    ],
+    "sample_limit": 100
+  },
+  "primary_key_validation": {
+    "candidate_primary_key": "OBJ_SQLIDENTITY",
+    "total_records": 148522,
+    "missing_records": 0,
+    "distinct_string_identifiers": 148522,
+    "duplicate_string_identifier_excess": 0,
+    "invalid_integer_format_records": 0,
+    "invalid_bigint_conversion_records": 0,
+    "distinct_converted_bigint_identifiers": 148522,
+    "duplicate_converted_bigint_excess": 0,
+    "is_candidate_primary_key": true
+  },
+  "asset_status_distribution": [
+    {
+      "status": "I",
+      "record_count": 76075
+    },
+    {
+      "status": "EO",
+      "record_count": 40173
+    },
+    {
+      "status": "D",
+      "record_count": 25215
+    },
+    {
+      "status": "S",
+      "record_count": 5945
+    },
+    {
+      "status": "SUSN",
+      "record_count": 517
+    },
+    {
+      "status": "IS",
+      "record_count": 211
+    },
+    {
+      "status": "U",
+      "record_count": 170
+    },
+    {
+      "status": "SUS",
+      "record_count": 154
+    },
+    {
+      "status": "RTV",
+      "record_count": 27
+    },
+    {
+      "status": "SUSL",
+      "record_count": 14
+    },
+    {
+      "status": "RMA",
+      "record_count": 13
+    },
+    {
+      "status": "RIH",
+      "record_count": 4
+    },
+    {
+      "status": "SLOA",
+      "record_count": 4
+    }
+  ],
+  "numeric_type_validation": {
+    "OBJ_SQLIDENTITY": {
+      "target_spark_type": "BIGINT",
+      "non_missing_records": 148522,
+      "missing_records": 0,
+      "invalid_format_records": 0,
+      "invalid_conversion_records": 0,
+      "sample_source_values": [
+        "1",
+        "3",
+        "4",
+        "8",
+        "12"
+      ],
+      "conversion_eligible": true
+    },
+    "OBJ_VALUE": {
+      "target_spark_type": "DOUBLE",
+      "non_missing_records": 929,
+      "missing_records": 147593,
+      "invalid_format_records": 0,
+      "invalid_conversion_records": 0,
+      "sample_source_values": [
+        "240.000000",
+        "400.000000",
+        "359.000000",
+        "316.000000",
+        "399.000000"
+      ],
+      "conversion_eligible": true
+    },
+    "OBJ_XLOCATION": {
+      "target_spark_type": "DOUBLE",
+      "non_missing_records": 50499,
+      "missing_records": 98023,
+      "invalid_format_records": 0,
+      "invalid_conversion_records": 0,
+      "sample_source_values": [
+        "1037417.851657",
+        "1032103.265501",
+        "1011299.411112",
+        "1018923.337465",
+        "1014731.575507"
+      ],
+      "conversion_eligible": true
+    },
+    "OBJ_YLOCATION": {
+      "target_spark_type": "DOUBLE",
+      "non_missing_records": 50499,
+      "missing_records": 98023,
+      "invalid_format_records": 0,
+      "invalid_conversion_records": 0,
+      "sample_source_values": [
+        "211071.163537",
+        "207468.261294",
+        "205664.498497",
+        "162062.212998",
+        "215051.871127"
+      ],
+      "conversion_eligible": true
+    },
+    "OBJ_UPDATECOUNT": {
+      "target_spark_type": "BIGINT",
+      "non_missing_records": 148522,
+      "missing_records": 0,
+      "invalid_format_records": 0,
+      "invalid_conversion_records": 0,
+      "sample_source_values": [
+        "1",
+        "8",
+        "4",
+        "12",
+        "3"
+      ],
+      "conversion_eligible": true
+    },
+    "OBJ_GISOBJID": {
+      "target_spark_type": "BIGINT",
+      "non_missing_records": 50627,
+      "missing_records": 97895,
+      "invalid_format_records": 0,
+      "invalid_conversion_records": 0,
+      "sample_source_values": [
+        "100000002",
+        "100000006",
+        "100000008",
+        "100000011",
+        "100000013"
+      ],
+      "conversion_eligible": true
+    }
+  },
+  "date_timestamp_validation": {
+    "OBJ_COMMISS": {
+      "target_spark_type": "timestamp",
+      "non_missing_records": 148521,
+      "missing_records": 1,
+      "parseable_records": 148521,
+      "unparseable_records": 0,
+      "parse_success_percentage": 100.0,
+      "tested_formats": [
+        "MMM d yyyy h:mma",
+        "MMM d yyyy h:mm a",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd",
+        "M/d/yyyy H:mm:ss",
+        "M/d/yyyy H:mm",
+        "M/d/yyyy h:mm a",
+        "M/d/yyyy"
+      ],
+      "sample_source_values": [
+        "Feb 20 2009 12:00AM",
+        "Dec 13 2018 12:00AM",
+        "Apr 23 2009 12:00AM",
+        "Apr 25 2009 12:00AM",
+        "Apr 28 2009 12:00AM"
+      ],
+      "unparseable_examples": [],
+      "all_non_missing_values_parseable": true
+    },
+    "OBJ_WITHDRAW": {
+      "target_spark_type": "timestamp",
+      "non_missing_records": 64324,
+      "missing_records": 84198,
+      "parseable_records": 64324,
+      "unparseable_records": 0,
+      "parse_success_percentage": 100.0,
+      "tested_formats": [
+        "MMM d yyyy h:mma",
+        "MMM d yyyy h:mm a",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd",
+        "M/d/yyyy H:mm:ss",
+        "M/d/yyyy H:mm",
+        "M/d/yyyy h:mm a",
+        "M/d/yyyy"
+      ],
+      "sample_source_values": [
+        "Sep 28 2012  1:17PM",
+        "Dec 13 2012 12:18PM",
+        "Dec  4 2012 12:26PM",
+        "Apr 30 2012  9:24AM",
+        "Jan 10 2012 12:00AM"
+      ],
+      "unparseable_examples": [],
+      "all_non_missing_values_parseable": true
+    },
+    "OBJ_RECORD": {
+      "target_spark_type": "timestamp",
+      "non_missing_records": 148522,
+      "missing_records": 0,
+      "parseable_records": 148522,
+      "unparseable_records": 0,
+      "parse_success_percentage": 100.0,
+      "tested_formats": [
+        "MMM d yyyy h:mma",
+        "MMM d yyyy h:mm a",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd",
+        "M/d/yyyy H:mm:ss",
+        "M/d/yyyy H:mm",
+        "M/d/yyyy h:mm a",
+        "M/d/yyyy"
+      ],
+      "sample_source_values": [
+        "Jan  6 2009 10:20AM",
+        "Feb 20 2009  9:36AM",
+        "Feb 20 2009  9:41AM",
+        "Feb 20 2009  9:42AM",
+        "Feb 20 2009  9:44AM"
+      ],
+      "unparseable_examples": [],
+      "all_non_missing_values_parseable": true
+    },
+    "OBJ_UPDATED": {
+      "target_spark_type": "timestamp",
+      "non_missing_records": 109604,
+      "missing_records": 38918,
+      "parseable_records": 109604,
+      "unparseable_records": 0,
+      "parse_success_percentage": 100.0,
+      "tested_formats": [
+        "MMM d yyyy h:mma",
+        "MMM d yyyy h:mm a",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd",
+        "M/d/yyyy H:mm:ss",
+        "M/d/yyyy H:mm",
+        "M/d/yyyy h:mm a",
+        "M/d/yyyy"
+      ],
+      "sample_source_values": [
+        "Feb 20 2009  9:36AM",
+        "Feb 20 2009  9:41AM",
+        "Feb 20 2009  9:42AM",
+        "Feb 20 2009  9:44AM",
+        "Feb 20 2009  9:45AM"
+      ],
+      "unparseable_examples": [],
+      "all_non_missing_values_parseable": true
+    },
+    "OBJ_CREATED": {
+      "target_spark_type": "timestamp",
+      "non_missing_records": 74586,
+      "missing_records": 73936,
+      "parseable_records": 74586,
+      "unparseable_records": 0,
+      "parse_success_percentage": 100.0,
+      "tested_formats": [
+        "MMM d yyyy h:mma",
+        "MMM d yyyy h:mm a",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd",
+        "M/d/yyyy H:mm:ss",
+        "M/d/yyyy H:mm",
+        "M/d/yyyy h:mm a",
+        "M/d/yyyy"
+      ],
+      "sample_source_values": [
+        "Jul  3 2018  4:08PM",
+        "Jul  3 2018  4:09PM",
+        "Aug 15 2019  3:30PM",
+        "Jul 16 2026  3:25PM",
+        "May 22 2026 10:20AM"
+      ],
+      "unparseable_examples": [],
+      "all_non_missing_values_parseable": true
+    }
+  },
+  "full_row_duplicate_analysis": {
+    "total_records": 148522,
+    "distinct_full_rows": 148522,
+    "exact_duplicate_excess_rows": 0,
+    "all_full_rows_unique": true,
+    "note": "This check compares all original columns. Duplicate OBJ_CODE values do not necessarily represent exact duplicate records."
+  },
+  "asset_value_quality_analysis": {
+    "source_column": "OBJ_VALUE",
+    "non_missing_records": 929,
+    "valid_numeric_records": 929,
+    "minimum_value": 0.0,
+    "maximum_value": 16238.0,
+    "average_value": 606.0082992465016,
+    "negative_value_records": 0,
+    "zero_value_records": 10,
+    "largest_values_sample": [
+      {
+        "asset_code": "13971",
+        "asset_description": "HONDA-EC3000-GENERATOR-EZGF1172610",
+        "asset_value": 16238.0
+      },
+      {
+        "asset_code": "13652",
+        "asset_description": "GIANT VAC-TL25201KH-LEAF VACUUM-200766025",
+        "asset_value": 5579.96
+      },
+      {
+        "asset_code": "13975",
+        "asset_description": "ELECTRIC EEL-325-OTHER EQUIPMENT-25824",
+        "asset_value": 4995.0
+      },
+      {
+        "asset_code": "13552",
+        "asset_description": "BUFFALO TURBINE-H10G-LEAF BLOWER-11490",
+        "asset_value": 4750.0
+      },
+      {
+        "asset_code": "13466",
+        "asset_description": "RYAN-544837B-SEEDER-544873B00298",
+        "asset_value": 4197.96
+      },
+      {
+        "asset_code": "14014",
+        "asset_description": "SWEEPSTER-WSP36MO7-SWEEPER-923034",
+        "asset_value": 3990.0
+      },
+      {
+        "asset_code": "14015",
+        "asset_description": "SWEEPSTER-WSP36MO7-SWEEPER-916123",
+        "asset_value": 3800.0
+      },
+      {
+        "asset_code": "13070",
+        "asset_description": "GRAVELY-124E-OTHER EQUIPMENT-",
+        "asset_value": 3584.0
+      },
+      {
+        "asset_code": "13125",
+        "asset_description": "GRAVELY-985005-LAWN MOWER - SELF PROPELLED-447",
+        "asset_value": 3580.0
+      },
+      {
+        "asset_code": "13090",
+        "asset_description": "GRAVELY-5665-LAWN MOWER-",
+        "asset_value": 3280.0
+      }
+    ],
+    "note": "Missing, zero, and negative values are preserved. Their business meanings must be verified before cleaning."
+  },
+  "coordinate_quality_analysis": {
+    "total_records": 148522,
+    "both_coordinates_present": 50499,
+    "both_coordinates_missing": 98023,
+    "only_x_present": 0,
+    "only_y_present": 0,
+    "valid_numeric_coordinate_pairs": 50499,
+    "invalid_numeric_coordinate_pairs": 0,
+    "minimum_x": 0.0,
+    "maximum_x": 1066850.51556,
+    "minimum_y": 0.0,
+    "maximum_y": 271157.385556,
+    "zero_coordinate_records": 1,
+    "iqr_review_boundaries": {
+      "x": {
+        "q1": 993524.500139,
+        "q3": 1023091.981359,
+        "iqr": 29567.481219999958,
+        "lower_review_boundary": 949173.2783090001,
+        "upper_review_boundary": 1067443.203189
+      },
+      "y": {
+        "q1": 184496.126464,
+        "q3": 230380.923802,
+        "iqr": 45884.797338000004,
+        "lower_review_boundary": 115668.930457,
+        "upper_review_boundary": 299208.119809
+      }
+    },
+    "possible_statistical_outliers": 1394,
+    "outlier_samples": [
+      {
+        "asset_code": "10266",
+        "x": 913994.00008,
+        "y": 122529.00007
+      },
+      {
+        "asset_code": "10267",
+        "x": 913799.000142,
+        "y": 122484.00016
+      },
+      {
+        "asset_code": "10268",
+        "x": 913604.999874,
+        "y": 122431.999936
+      },
+      {
+        "asset_code": "RZ25",
+        "x": 937178.261126,
+        "y": 149459.484267
+      },
+      {
+        "asset_code": "10370",
+        "x": 931724.000053,
+        "y": 127767.000093
+      },
+      {
+        "asset_code": "10371",
+        "x": 931483.999877,
+        "y": 127431.000109
+      },
+      {
+        "asset_code": "10372",
+        "x": 935052.999957,
+        "y": 131743.000015
+      },
+      {
+        "asset_code": "10373",
+        "x": 935018.000027,
+        "y": 132008.000141
+      },
+      {
+        "asset_code": "10374",
+        "x": 934766.999872,
+        "y": 131953.999921
+      },
+      {
+        "asset_code": "10474",
+        "x": 914313.000098,
+        "y": 122373.000054
+      }
+    ],
+    "coordinate_reference_system_verified": false,
+    "note": "X/Y values appear to use projected coordinates. The official coordinate reference system must be verified before geospatial conversion. IQR flags do not prove that coordinates are wrong."
+  },
+  "date_relationship_quality_analysis": {
+    "records_with_both_parseable_dates": 64324,
+    "withdrawal_before_commission_count": 0,
+    "suspicious_records_sample": [],
+    "note": "Flagged records require validation of the source system's date semantics. No date values have been altered."
+  },
+  "placeholder_record_analysis": {
+    "placeholder_asset_code_records": 1,
+    "description_mentions_duplicate_records": 5,
+    "description_mentions_retired_records": 3,
+    "placeholder_samples": [
+      {
+        "OBJ_CODE": "*",
+        "OBJ_DESC": "ANY OBJECT",
+        "OBJ_STATUS": "I",
+        "OBJ_SQLIDENTITY": "1"
+      }
+    ],
+    "note": "These are review flags, not confirmed errors. All records remain in raw data and will be preserved in Bronze."
+  }
+}

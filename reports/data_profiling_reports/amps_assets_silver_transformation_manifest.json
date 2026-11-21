@@ -1,0 +1,40 @@
+{
+  "project": "AssetFusion360",
+  "phase": "Silver",
+  "step": "6.2B",
+  "dataset": "AMPS Assets",
+  "status": "COMPLETED",
+  "engine": "PyArrow",
+  "orchestration": "Kedro",
+  "publication_method": "Recovery of previously validated staged Parquet",
+  "bronze_source": "data/02_bronze_ingested_data/amps_assets/part-00000.parquet",
+  "silver_output": "data/03_silver_cleaned_data/amps_assets/part-00000.parquet",
+  "bronze_sha256": "b18b177780b9f8a6b1a542d8d64a6497cf90b4c0d4475421f0d4252791b2b483",
+  "silver_sha256": "a1c3d4f392253920946bb9e6f40f91bc75a933ea95ba394f453c0b17c81ea8e6",
+  "bronze_rows": 148522,
+  "silver_rows": 148522,
+  "bronze_columns": 32,
+  "silver_columns": 43,
+  "original_source_fields_preserved": true,
+  "row_count_preserved": true,
+  "quality_flag_counts": {
+    "dq_asset_code_missing": 0,
+    "dq_asset_code_placeholder": 1,
+    "dq_asset_identity_invalid": 0,
+    "dq_commission_date_invalid": 0,
+    "dq_created_date_invalid": 0,
+    "dq_asset_value_invalid": 0,
+    "dq_any_issue": 1
+  },
+  "silver_parquet_row_groups": 30,
+  "silver_parquet_size_bytes": 7757142,
+  "validation": {
+    "original_bronze_values": "PASS",
+    "row_count_reconciliation": "PASS",
+    "schema_validation": "PASS",
+    "quality_flags": "PASS",
+    "bronze_checksum_unchanged": "PASS"
+  },
+  "recovery_note": "The original transformation completed all data validations but Windows denied the staging directory rename. Existing staged Parquet was independently verified and published without rerunning the transformation.",
+  "recovered_utc": "2026-11-15T03:31:44.412805+00:00"
+}

@@ -1,0 +1,377 @@
+{
+  "project": "AssetFusion360",
+  "status": "UPSTREAM_LINEAGE_CANDIDATES",
+  "tables": [
+    {
+      "gold_table": "dim_asset",
+      "silver_candidate_file_count": 1,
+      "silver_candidate_paths": [
+        "data/03_silver_cleaned_data/amps_assets/part-00000.parquet"
+      ],
+      "pipeline_candidates": [
+        {
+          "path": "src/assetfusion360/pipelines/bronze_assets_ingestion.py",
+          "amps_references": [
+            "AMPS_Assets",
+            "AMPS_Assets_PyArrow",
+            "amps_assets",
+            "amps_assets_bronze",
+            "amps_assets_bronze_ingestion_manifest",
+            "amps_assets_bronze_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_asset_bridge.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_asset.py",
+          "amps_references": [
+            "amps_assets"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_assets_transformation.py",
+          "amps_references": [
+            "amps_assets",
+            "amps_assets_silver",
+            "amps_assets_silver_manifest",
+            "amps_assets_silver_transformation_manifest"
+          ]
+        }
+      ],
+      "status": "CANDIDATES_NOT_CERTIFIED"
+    },
+    {
+      "gold_table": "bridge_asset_code",
+      "silver_candidate_file_count": 1,
+      "silver_candidate_paths": [
+        "data/03_silver_cleaned_data/amps_assets/part-00000.parquet"
+      ],
+      "pipeline_candidates": [
+        {
+          "path": "src/assetfusion360/pipelines/bronze_assets_ingestion.py",
+          "amps_references": [
+            "AMPS_Assets",
+            "AMPS_Assets_PyArrow",
+            "amps_assets",
+            "amps_assets_bronze",
+            "amps_assets_bronze_ingestion_manifest",
+            "amps_assets_bronze_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_asset_bridge.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_asset.py",
+          "amps_references": [
+            "amps_assets"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_workorders.py",
+          "amps_references": [
+            "amps_workorders"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_assets_transformation.py",
+          "amps_references": [
+            "amps_assets",
+            "amps_assets_silver",
+            "amps_assets_silver_manifest",
+            "amps_assets_silver_transformation_manifest"
+          ]
+        }
+      ],
+      "status": "CANDIDATES_NOT_CERTIFIED"
+    },
+    {
+      "gold_table": "fact_workorders",
+      "silver_candidate_file_count": 447,
+      "silver_candidate_paths": [
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00001.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00002.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00003.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00004.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00005.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00006.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00007.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00008.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00009.parquet",
+        "data/03_silver_cleaned_data/amps_workorders/workorders_batch_00010.parquet"
+      ],
+      "pipeline_candidates": [
+        {
+          "path": "src/assetfusion360/pipelines/bronze_workorders_ingestion.py",
+          "amps_references": [
+            "AMPS_WorkOrders_Bronze",
+            "amps_workorders",
+            "amps_workorders_bronze",
+            "amps_workorders_bronze_ingestion_manifest",
+            "amps_workorders_bronze_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_date.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_workorder_priority.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_workorder_type.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_labor.py",
+          "amps_references": [
+            "amps_labor"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_transaction_details.py",
+          "amps_references": [
+            "amps_transaction_details"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_workorders.py",
+          "amps_references": [
+            "amps_workorders"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_workorder_monthly_kpis.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_workorders_transformation.py",
+          "amps_references": [
+            "amps_workorders",
+            "amps_workorders_silver",
+            "amps_workorders_silver_manifest",
+            "amps_workorders_silver_transformation_manifest"
+          ]
+        }
+      ],
+      "status": "CANDIDATES_NOT_CERTIFIED"
+    },
+    {
+      "gold_table": "fact_labor",
+      "silver_candidate_file_count": 647,
+      "silver_candidate_paths": [
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00001.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00002.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00003.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00004.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00005.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00006.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00007.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00008.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00009.parquet",
+        "data/03_silver_cleaned_data/amps_labor/labor_batch_00010.parquet"
+      ],
+      "pipeline_candidates": [
+        {
+          "path": "src/assetfusion360/pipelines/bronze_labor_ingestion.py",
+          "amps_references": [
+            "AMPS_Labor_Bronze",
+            "amps_labor",
+            "amps_labor_bronze",
+            "amps_labor_bronze_ingestion_manifest",
+            "amps_labor_bronze_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_date.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_labor.py",
+          "amps_references": [
+            "amps_labor"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_labor_monthly_kpis.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_labor_transformation.py",
+          "amps_references": [
+            "amps_labor",
+            "amps_labor_silver",
+            "amps_labor_silver_manifest",
+            "amps_labor_silver_transformation_manifest"
+          ]
+        }
+      ],
+      "status": "CANDIDATES_NOT_CERTIFIED"
+    },
+    {
+      "gold_table": "fact_transactions",
+      "silver_candidate_file_count": 613,
+      "silver_candidate_paths": [
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00001.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00002.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00003.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00004.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00005.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00006.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00007.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00008.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00009.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00010.parquet"
+      ],
+      "pipeline_candidates": [
+        {
+          "path": "src/assetfusion360/pipelines/bronze_transaction_details_ingestion.py",
+          "amps_references": [
+            "AMPS_TransactionDetails_Bronze",
+            "amps_transaction_details",
+            "amps_transaction_details_bronze",
+            "amps_transaction_details_bronze_ingestion_manifest",
+            "amps_transaction_details_bronze_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/bronze_transactions_ingestion.py",
+          "amps_references": [
+            "AMPS_Transactions_Bronze",
+            "amps_transactions",
+            "amps_transactions_bronze",
+            "amps_transactions_bronze_ingestion_manifest",
+            "amps_transactions_bronze_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_date.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_transaction_status.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_transaction_type.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_transaction_details.py",
+          "amps_references": [
+            "amps_transaction_details"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_transactions.py",
+          "amps_references": [
+            "amps_transactions"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_transaction_monthly_kpis.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_transaction_details_transformation.py",
+          "amps_references": [
+            "amps_transaction_details",
+            "amps_transaction_details_silver",
+            "amps_transaction_details_silver_manifest",
+            "amps_transaction_details_silver_transformation_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/silver_transactions_transformation.py",
+          "amps_references": [
+            "amps_transactions",
+            "amps_transactions_silver",
+            "amps_transactions_silver_manifest",
+            "amps_transactions_silver_transformation_manifest"
+          ]
+        }
+      ],
+      "status": "CANDIDATES_NOT_CERTIFIED"
+    },
+    {
+      "gold_table": "fact_transaction_details",
+      "silver_candidate_file_count": 613,
+      "silver_candidate_paths": [
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00001.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00002.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00003.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00004.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00005.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00006.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00007.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00008.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00009.parquet",
+        "data/03_silver_cleaned_data/amps_transaction_details/transaction_details_batch_00010.parquet"
+      ],
+      "pipeline_candidates": [
+        {
+          "path": "src/assetfusion360/pipelines/bronze_transaction_details_ingestion.py",
+          "amps_references": [
+            "AMPS_TransactionDetails_Bronze",
+            "amps_transaction_details",
+            "amps_transaction_details_bronze",
+            "amps_transaction_details_bronze_ingestion_manifest",
+            "amps_transaction_details_bronze_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/bronze_transactions_ingestion.py",
+          "amps_references": [
+            "AMPS_Transactions_Bronze",
+            "amps_transactions",
+            "amps_transactions_bronze",
+            "amps_transactions_bronze_ingestion_manifest",
+            "amps_transactions_bronze_manifest"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_date.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_detail_type.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_part.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_transaction_status.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_dim_transaction_type.py",
+          "amps_references": []
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_transaction_details.py",
+          "amps_references": [
+            "amps_transaction_details"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_fact_transactions.py",
+          "amps_references": [
+            "amps_transactions"
+          ]
+        },
+        {
+          "path": "src/assetfusion360/pipelines/gold_material_monthly_kpis.py",
+          "amps_references": []
+        }
+      ],
+      "status": "CANDIDATES_NOT_CERTIFIED"
+    }
+  ],
+  "note": "Filename and code matches are candidates, not verified execution lineage."
+}

@@ -1,0 +1,330 @@
+{
+  "project": "AssetFusion360",
+  "profiling_step": "4.6C",
+  "dataset": "NYC Parks AMPS Labor - CSV Batches",
+  "source_directory": "data\\01_raw_source_data\\nyc_parks_asset_management\\labor_batches",
+  "profile_timestamp_utc": "2026-11-15T00:12:38.448057+00:00",
+  "spark_version": "3.5.7",
+  "total_source_files": 647,
+  "total_records": 3230423,
+  "total_columns": 18,
+  "csv_reader_configuration": {
+    "header": true,
+    "quote": "\"",
+    "escape": "\"",
+    "multiLine": true,
+    "inferSchema": false,
+    "mode": "FAILFAST"
+  },
+  "source_schema": [
+    {
+      "column_name": "boo_event",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_act",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_date",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_trade",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_octype",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_on",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_off",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_hours",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_rate",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_cost",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_entered",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_correction",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_sqlidentity",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_jecategory",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_jesource",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_desc",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_code",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "boo_misc",
+      "data_type": "string",
+      "nullable": true
+    }
+  ],
+  "column_quality": [
+    {
+      "column_name": "boo_event",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_act",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_date",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_trade",
+      "source_data_type": "string",
+      "missing_count": 19190,
+      "non_missing_count": 3211233,
+      "missing_percentage": 0.59,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_octype",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_on",
+      "source_data_type": "string",
+      "missing_count": 3223636,
+      "non_missing_count": 6787,
+      "missing_percentage": 99.79,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_off",
+      "source_data_type": "string",
+      "missing_count": 3223636,
+      "non_missing_count": 6787,
+      "missing_percentage": 99.79,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_hours",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_rate",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_cost",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_entered",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_correction",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 3155837,
+      "dash_placeholder_percentage": 97.69
+    },
+    {
+      "column_name": "boo_sqlidentity",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_jecategory",
+      "source_data_type": "string",
+      "missing_count": 3214878,
+      "non_missing_count": 15545,
+      "missing_percentage": 99.52,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_jesource",
+      "source_data_type": "string",
+      "missing_count": 3214877,
+      "non_missing_count": 15546,
+      "missing_percentage": 99.52,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_desc",
+      "source_data_type": "string",
+      "missing_count": 3228910,
+      "non_missing_count": 1513,
+      "missing_percentage": 99.95,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_code",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "boo_misc",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 3230423,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 3229038,
+      "dash_placeholder_percentage": 99.96
+    }
+  ],
+  "potential_identifier_columns": [
+    "boo_event",
+    "boo_sqlidentity"
+  ],
+  "potential_relationship_columns": [
+    "boo_event",
+    "boo_trade",
+    "boo_sqlidentity",
+    "boo_code"
+  ],
+  "identifier_validation": {
+    "boo_event": {
+      "total_records": 3230423,
+      "non_missing_records": 3230423,
+      "missing_records": 0,
+      "distinct_identifiers": 1066707,
+      "duplicate_excess_rows": 2163716,
+      "is_complete": true,
+      "is_unique": false,
+      "is_candidate_record_key": false,
+      "note": "Uniqueness alone does not establish the business meaning of this identifier."
+    },
+    "boo_sqlidentity": {
+      "total_records": 3230423,
+      "non_missing_records": 3230423,
+      "missing_records": 0,
+      "distinct_identifiers": 3230423,
+      "duplicate_excess_rows": 0,
+      "is_complete": true,
+      "is_unique": true,
+      "is_candidate_record_key": true,
+      "note": "Uniqueness alone does not establish the business meaning of this identifier."
+    }
+  },
+  "sample_inspection": {
+    "sample_count_requested": 5,
+    "sample_columns": [
+      "boo_event",
+      "boo_act",
+      "boo_date",
+      "boo_trade",
+      "boo_octype",
+      "boo_on",
+      "boo_off",
+      "boo_hours"
+    ]
+  },
+  "notes": [
+    "All 647 source headers are validated.",
+    "All fields are initially read as strings.",
+    "Source files are not modified.",
+    "Dash placeholders are counted separately.",
+    "Candidate keys need business validation.",
+    "Cross-dataset relationships are not yet tested."
+  ]
+}

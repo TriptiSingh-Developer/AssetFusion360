@@ -1,0 +1,8 @@
+{
+  "table": "dim_workorder_type",
+  "status": "COMPLETED",
+  "rows": 7,
+  "columns": 3,
+  "source_workorders": 2231535,
+  "created_utc": "2026-11-15T06:34:16.783083+00:00"
+}

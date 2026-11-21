@@ -1,0 +1,31 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold",
+  "table": "dim_date",
+  "status": "COMPLETED",
+  "rows": 9356,
+  "columns": 12,
+  "parquet_files": 1,
+  "first_date": "2001-03-21",
+  "last_date": "2026-10-31",
+  "observed_dates": 6416,
+  "source_stats": {
+    "fact_workorders": {
+      "rows": 2231535,
+      "missing_dates": 0
+    },
+    "fact_labor": {
+      "rows": 3230423,
+      "missing_dates": 0
+    },
+    "fact_transactions": {
+      "rows": 755122,
+      "missing_dates": 0
+    },
+    "fact_transaction_details": {
+      "rows": 2301927,
+      "missing_dates": 0
+    }
+  },
+  "created_utc": "2026-11-15T06:31:07.950026+00:00"
+}

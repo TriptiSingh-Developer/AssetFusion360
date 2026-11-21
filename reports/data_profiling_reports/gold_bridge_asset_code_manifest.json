@@ -1,0 +1,19 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold",
+  "table": "bridge_asset_code",
+  "status": "COMPLETED",
+  "source": "data/04_gold_analytics/dim_asset/part-00000.parquet",
+  "output": "data/04_gold_analytics/bridge_asset_code/part-00000.parquet",
+  "rows": 148521,
+  "columns": 7,
+  "source_asset_rows": 148522,
+  "unique_codes": 148520,
+  "ambiguous_codes": 1,
+  "ambiguous_code": "B223PA",
+  "candidate_asset_identities": [
+    5514,
+    6133
+  ],
+  "created_utc": "2026-11-15T04:52:04.749779+00:00"
+}

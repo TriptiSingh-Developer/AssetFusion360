@@ -1,0 +1,26 @@
+{
+  "project": "AssetFusion360",
+  "assessment": "Local Warehouse Readiness",
+  "created_utc": "2026-11-15T06:57:04.433784+00:00",
+  "status": "CONDITIONALLY_READY",
+  "gold_tables": 17,
+  "documented_relationships": 15,
+  "checks": {
+    "gold_table_inventory": "PASS",
+    "gold_primary_key_quality": "PASS",
+    "gold_schema_consistency": "PASS",
+    "er_documentation": "PASS",
+    "relationship_specification": "PASS",
+    "semantic_implementation_plan": "PASS",
+    "upstream_lineage_certification": "PENDING",
+    "pipeline_orchestration_validation": "PENDING",
+    "physical_semantic_relationships": "PENDING",
+    "azure_fabric_deployment": "PENDING"
+  },
+  "next_actions": [
+    "Certify core upstream Silver-to-Gold mappings",
+    "Validate orchestration dependencies and safe reruns",
+    "Implement semantic relationship mappings",
+    "Deploy validated data pipelines to Azure and Fabric"
+  ]
+}

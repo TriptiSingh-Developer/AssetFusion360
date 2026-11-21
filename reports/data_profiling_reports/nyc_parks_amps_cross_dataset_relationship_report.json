@@ -1,0 +1,246 @@
+{
+  "project": "AssetFusion360",
+  "profiling_step": "4.6F",
+  "dataset_collection": "NYC Parks AMPS",
+  "generated_utc": "2026-11-15T00:31:16.011472+00:00",
+  "spark_version": "3.5.7",
+  "validation_status": "COMPLETED",
+  "relationship_results": [
+    {
+      "relationship_name": "Assets_to_WorkOrders",
+      "parent_dataset": "assets",
+      "parent_column": "OBJ_CODE",
+      "child_dataset": "workorders",
+      "child_column": "evt_object",
+      "matching_method": "Trimmed, case-sensitive, exact string matching",
+      "parent_keys_deduplicated": true,
+      "total_child_rows": 2231535,
+      "missing_reference_rows": 0,
+      "populated_reference_rows": 2231535,
+      "matched_child_rows": 2231535,
+      "unmatched_child_rows": 0,
+      "match_percentage_of_populated": 100.0,
+      "match_percentage_of_all_rows": 100.0,
+      "distinct_matched_references": 108257,
+      "distinct_unmatched_references": 0,
+      "unmatched_reference_samples": [],
+      "all_populated_references_match": true,
+      "all_child_rows_have_valid_references": true,
+      "notes": [
+        "No rows were modified or removed.",
+        "Blank child references are counted separately.",
+        "Parent keys were deduplicated before joining.",
+        "An unmatched reference is a review finding.",
+        "Business semantics require separate validation."
+      ]
+    },
+    {
+      "relationship_name": "WorkOrders_to_Labor",
+      "parent_dataset": "workorders",
+      "parent_column": "evt_code",
+      "child_dataset": "labor",
+      "child_column": "boo_event",
+      "matching_method": "Trimmed, case-sensitive, exact string matching",
+      "parent_keys_deduplicated": true,
+      "total_child_rows": 3230423,
+      "missing_reference_rows": 0,
+      "populated_reference_rows": 3230423,
+      "matched_child_rows": 3217345,
+      "unmatched_child_rows": 13078,
+      "match_percentage_of_populated": 99.6,
+      "match_percentage_of_all_rows": 99.6,
+      "distinct_matched_references": 1066626,
+      "distinct_unmatched_references": 81,
+      "unmatched_reference_samples": [
+        {
+          "reference": "552779",
+          "child_records": 947
+        },
+        {
+          "reference": "509102",
+          "child_records": 871
+        },
+        {
+          "reference": "552809",
+          "child_records": 618
+        },
+        {
+          "reference": "551975",
+          "child_records": 560
+        },
+        {
+          "reference": "552781",
+          "child_records": 550
+        },
+        {
+          "reference": "1153617",
+          "child_records": 543
+        },
+        {
+          "reference": "552892",
+          "child_records": 526
+        },
+        {
+          "reference": "552893",
+          "child_records": 505
+        },
+        {
+          "reference": "1153618",
+          "child_records": 492
+        },
+        {
+          "reference": "551227",
+          "child_records": 476
+        }
+      ],
+      "all_populated_references_match": false,
+      "all_child_rows_have_valid_references": false,
+      "notes": [
+        "No rows were modified or removed.",
+        "Blank child references are counted separately.",
+        "Parent keys were deduplicated before joining.",
+        "An unmatched reference is a review finding.",
+        "Business semantics require separate validation."
+      ]
+    },
+    {
+      "relationship_name": "Transactions_to_TransactionDetails",
+      "parent_dataset": "transactions",
+      "parent_column": "tra_code",
+      "child_dataset": "transaction_details",
+      "child_column": "trl_trans",
+      "matching_method": "Trimmed, case-sensitive, exact string matching",
+      "parent_keys_deduplicated": true,
+      "total_child_rows": 2301927,
+      "missing_reference_rows": 0,
+      "populated_reference_rows": 2301927,
+      "matched_child_rows": 2300536,
+      "unmatched_child_rows": 1391,
+      "match_percentage_of_populated": 99.94,
+      "match_percentage_of_all_rows": 99.94,
+      "distinct_matched_references": 743718,
+      "distinct_unmatched_references": 319,
+      "unmatched_reference_samples": [
+        {
+          "reference": "991541",
+          "child_records": 91
+        },
+        {
+          "reference": "991342",
+          "child_records": 34
+        },
+        {
+          "reference": "991396",
+          "child_records": 27
+        },
+        {
+          "reference": "991397",
+          "child_records": 27
+        },
+        {
+          "reference": "991563",
+          "child_records": 26
+        },
+        {
+          "reference": "991309",
+          "child_records": 22
+        },
+        {
+          "reference": "991310",
+          "child_records": 22
+        },
+        {
+          "reference": "991333",
+          "child_records": 20
+        },
+        {
+          "reference": "991335",
+          "child_records": 20
+        },
+        {
+          "reference": "991412",
+          "child_records": 19
+        }
+      ],
+      "all_populated_references_match": false,
+      "all_child_rows_have_valid_references": false,
+      "notes": [
+        "No rows were modified or removed.",
+        "Blank child references are counted separately.",
+        "Parent keys were deduplicated before joining.",
+        "An unmatched reference is a review finding.",
+        "Business semantics require separate validation."
+      ]
+    },
+    {
+      "relationship_name": "WorkOrders_to_TransactionDetails",
+      "parent_dataset": "workorders",
+      "parent_column": "evt_code",
+      "child_dataset": "transaction_details",
+      "child_column": "trl_event",
+      "matching_method": "Trimmed, case-sensitive, exact string matching",
+      "parent_keys_deduplicated": true,
+      "total_child_rows": 2301927,
+      "missing_reference_rows": 1492783,
+      "populated_reference_rows": 809144,
+      "matched_child_rows": 809009,
+      "unmatched_child_rows": 135,
+      "match_percentage_of_populated": 99.98,
+      "match_percentage_of_all_rows": 35.14,
+      "distinct_matched_references": 424338,
+      "distinct_unmatched_references": 40,
+      "unmatched_reference_samples": [
+        {
+          "reference": "2803003",
+          "child_records": 34
+        },
+        {
+          "reference": "2803112",
+          "child_records": 17
+        },
+        {
+          "reference": "2803475",
+          "child_records": 10
+        },
+        {
+          "reference": "2802959",
+          "child_records": 9
+        },
+        {
+          "reference": "2802958",
+          "child_records": 6
+        },
+        {
+          "reference": "2802960",
+          "child_records": 6
+        },
+        {
+          "reference": "2802769",
+          "child_records": 4
+        },
+        {
+          "reference": "2803135",
+          "child_records": 4
+        },
+        {
+          "reference": "2802966",
+          "child_records": 3
+        },
+        {
+          "reference": "2803473",
+          "child_records": 3
+        }
+      ],
+      "all_populated_references_match": false,
+      "all_child_rows_have_valid_references": false,
+      "notes": [
+        "No rows were modified or removed.",
+        "Blank child references are counted separately.",
+        "Parent keys were deduplicated before joining.",
+        "An unmatched reference is a review finding.",
+        "Business semantics require separate validation."
+      ]
+    }
+  ],
+  "last_updated_utc": "2026-11-15T00:32:53.011846+00:00"
+}

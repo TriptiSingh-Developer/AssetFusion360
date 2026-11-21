@@ -1,0 +1,396 @@
+{
+  "project": "AssetFusion360",
+  "profiling_step": "4.7A",
+  "dataset": "AI4I Predictive Maintenance",
+  "source_file": "data\\01_raw_source_data\\ai4i_predictive_maintenance\\ai4i2020.csv",
+  "profile_timestamp_utc": "2026-11-15T00:37:56.437337+00:00",
+  "spark_version": "3.5.7",
+  "total_source_files": 1,
+  "total_records": 10000,
+  "total_columns": 14,
+  "source_schema": [
+    {
+      "column_name": "UDI",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Product ID",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Type",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Air temperature [K]",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Process temperature [K]",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Rotational speed [rpm]",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Torque [Nm]",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Tool wear [min]",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "Machine failure",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "TWF",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "HDF",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "PWF",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "OSF",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "RNF",
+      "data_type": "string",
+      "nullable": true
+    }
+  ],
+  "column_quality": [
+    {
+      "column_name": "UDI",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "Product ID",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "Type",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "Air temperature [K]",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "Process temperature [K]",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "Rotational speed [rpm]",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "Torque [Nm]",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "Tool wear [min]",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "Machine failure",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "TWF",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "HDF",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "PWF",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "OSF",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    },
+    {
+      "column_name": "RNF",
+      "missing_count": 0,
+      "missing_percentage": 0.0,
+      "non_missing_count": 10000,
+      "dash_placeholder_count": 0
+    }
+  ],
+  "candidate_identifier_columns": [
+    "UDI",
+    "Product ID"
+  ],
+  "identifier_validation": {
+    "UDI": {
+      "non_missing_records": 10000,
+      "missing_records": 0,
+      "distinct_identifiers": 10000,
+      "duplicate_excess_rows": 0,
+      "is_candidate_record_key": true
+    },
+    "Product ID": {
+      "non_missing_records": 10000,
+      "missing_records": 0,
+      "distinct_identifiers": 10000,
+      "duplicate_excess_rows": 0,
+      "is_candidate_record_key": true
+    }
+  },
+  "numeric_quality": {
+    "UDI": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 1.0,
+      "maximum": 10000.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "Air temperature [K]": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 295.3,
+      "maximum": 304.5,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "Process temperature [K]": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 305.7,
+      "maximum": 313.8,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "Rotational speed [rpm]": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 1168.0,
+      "maximum": 2886.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "Torque [Nm]": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 3.8,
+      "maximum": 76.6,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "Tool wear [min]": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 0.0,
+      "maximum": 253.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "Machine failure": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "TWF": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "HDF": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "PWF": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "OSF": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    },
+    "RNF": {
+      "non_missing_records": 10000,
+      "valid_numeric_records": 10000,
+      "invalid_or_non_numeric_records": 0,
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "numeric_coverage_percentage": 100.0,
+      "is_numeric_candidate": true,
+      "note": "Numeric formatting does not establish the business meaning of the field."
+    }
+  },
+  "failure_target_distributions": {
+    "Machine failure": [
+      {
+        "value": "0",
+        "record_count": 9661
+      },
+      {
+        "value": "1",
+        "record_count": 339
+      }
+    ],
+    "TWF": [
+      {
+        "value": "0",
+        "record_count": 9954
+      },
+      {
+        "value": "1",
+        "record_count": 46
+      }
+    ],
+    "HDF": [
+      {
+        "value": "0",
+        "record_count": 9885
+      },
+      {
+        "value": "1",
+        "record_count": 115
+      }
+    ],
+    "PWF": [
+      {
+        "value": "0",
+        "record_count": 9905
+      },
+      {
+        "value": "1",
+        "record_count": 95
+      }
+    ],
+    "OSF": [
+      {
+        "value": "0",
+        "record_count": 9902
+      },
+      {
+        "value": "1",
+        "record_count": 98
+      }
+    ],
+    "RNF": [
+      {
+        "value": "0",
+        "record_count": 9981
+      },
+      {
+        "value": "1",
+        "record_count": 19
+      }
+    ]
+  },
+  "notes": [
+    "Original source CSV remains unchanged.",
+    "All source columns were read as strings.",
+    "Numeric candidates are identified from values.",
+    "No missing values were imputed.",
+    "Failure label semantics require verification.",
+    "AI4I records are not assumed to match AMPS assets.",
+    "Model training and validation are not yet performed."
+  ]
+}

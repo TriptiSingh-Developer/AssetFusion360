@@ -1,0 +1,19 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold Analytics",
+  "table": "gold_workorder_monthly_kpis",
+  "status": "COMPLETED",
+  "source": "data/04_gold_analytics/fact_workorders",
+  "output": "data/04_gold_analytics/gold_workorder_monthly_kpis/part-00000.parquet",
+  "rows": 1280,
+  "columns": 9,
+  "parquet_files": 1,
+  "source_workorder_rows": 2231535,
+  "reporting_months": 224,
+  "first_month": "2001-03",
+  "last_month": "2026-10",
+  "missing_priority_rows": 994238,
+  "missing_completion_rows": 25585,
+  "ambiguous_asset_rows": 400,
+  "created_utc": "2026-11-15T05:43:21.736194+00:00"
+}

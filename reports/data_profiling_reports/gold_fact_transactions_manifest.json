@@ -1,0 +1,18 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold",
+  "table": "fact_transactions",
+  "status": "COMPLETED",
+  "source": "data/03_silver_cleaned_data/amps_transactions",
+  "output": "data/04_gold_analytics/fact_transactions",
+  "rows": 755122,
+  "columns": 27,
+  "parquet_files": 152,
+  "unique_transaction_identities": 755122,
+  "unique_transaction_codes": 755122,
+  "missing_status_rows": 0,
+  "missing_type_rows": 0,
+  "missing_date_rows": 0,
+  "silver_dq_issue_rows": 0,
+  "created_utc": "2026-11-15T05:22:48.772088+00:00"
+}

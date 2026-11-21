@@ -1,0 +1,12 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold",
+  "table": "dim_transaction_type",
+  "status": "COMPLETED",
+  "rows": 6,
+  "columns": 4,
+  "parquet_files": 1,
+  "source_transactions": 755122,
+  "missing_transaction_types": 0,
+  "created_utc": "2026-11-15T06:36:30.610992+00:00"
+}

@@ -1,0 +1,666 @@
+{
+  "project": "AssetFusion360",
+  "profiling_step": "4.7B",
+  "dataset": "NYC 311 Service Requests",
+  "status": "COMPLETED",
+  "source_directory": "data\\01_raw_source_data\\nyc_311_service_requests",
+  "total_source_files": 176,
+  "total_columns": 44,
+  "total_records": 875134,
+  "source_columns": [
+    "unique_key",
+    "created_date",
+    "closed_date",
+    "agency",
+    "agency_name",
+    "complaint_type",
+    "descriptor",
+    "descriptor_2",
+    "location_type",
+    "incident_zip",
+    "incident_address",
+    "street_name",
+    "cross_street_1",
+    "cross_street_2",
+    "intersection_street_1",
+    "intersection_street_2",
+    "address_type",
+    "city",
+    "landmark",
+    "facility_type",
+    "status",
+    "due_date",
+    "resolution_description",
+    "resolution_action_updated_date",
+    "community_board",
+    "council_district",
+    "police_precinct",
+    "bbl",
+    "borough",
+    "x_coordinate_state_plane",
+    "y_coordinate_state_plane",
+    "open_data_channel_type",
+    "park_facility_name",
+    "park_borough",
+    "vehicle_type",
+    "taxi_company_borough",
+    "taxi_pick_up_location",
+    "bridge_highway_name",
+    "bridge_highway_direction",
+    "road_ramp",
+    "bridge_highway_segment",
+    "latitude",
+    "longitude",
+    "location"
+  ],
+  "spark_version": "3.5.7",
+  "csv_reader_configuration": {
+    "header": true,
+    "quote": "\"",
+    "escape": "\"",
+    "multiLine": true,
+    "mode": "FAILFAST",
+    "inferSchema": false
+  },
+  "business_field_discovery": {
+    "service_request_identifiers": [
+      "unique_key"
+    ],
+    "date_fields": [
+      "created_date",
+      "closed_date",
+      "due_date",
+      "resolution_action_updated_date"
+    ],
+    "agency_fields": [
+      "agency",
+      "agency_name"
+    ],
+    "service_category_fields": [
+      "complaint_type",
+      "descriptor",
+      "descriptor_2",
+      "status",
+      "resolution_description",
+      "resolution_action_updated_date"
+    ],
+    "geographic_fields": [
+      "location_type",
+      "incident_zip",
+      "incident_address",
+      "street_name",
+      "cross_street_1",
+      "cross_street_2",
+      "intersection_street_1",
+      "intersection_street_2",
+      "address_type",
+      "city",
+      "borough",
+      "park_facility_name",
+      "park_borough",
+      "taxi_company_borough",
+      "taxi_pick_up_location",
+      "latitude",
+      "longitude",
+      "location"
+    ]
+  },
+  "file_group_results": [
+    {
+      "group_number": 1,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00001.csv",
+      "last_file": "dpr_batches/dpr_batch_00012.csv"
+    },
+    {
+      "group_number": 2,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00013.csv",
+      "last_file": "dpr_batches/dpr_batch_00024.csv"
+    },
+    {
+      "group_number": 3,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00025.csv",
+      "last_file": "dpr_batches/dpr_batch_00036.csv"
+    },
+    {
+      "group_number": 4,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00037.csv",
+      "last_file": "dpr_batches/dpr_batch_00048.csv"
+    },
+    {
+      "group_number": 5,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00049.csv",
+      "last_file": "dpr_batches/dpr_batch_00060.csv"
+    },
+    {
+      "group_number": 6,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00061.csv",
+      "last_file": "dpr_batches/dpr_batch_00072.csv"
+    },
+    {
+      "group_number": 7,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00073.csv",
+      "last_file": "dpr_batches/dpr_batch_00084.csv"
+    },
+    {
+      "group_number": 8,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00085.csv",
+      "last_file": "dpr_batches/dpr_batch_00096.csv"
+    },
+    {
+      "group_number": 9,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00097.csv",
+      "last_file": "dpr_batches/dpr_batch_00108.csv"
+    },
+    {
+      "group_number": 10,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00109.csv",
+      "last_file": "dpr_batches/dpr_batch_00120.csv"
+    },
+    {
+      "group_number": 11,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00121.csv",
+      "last_file": "dpr_batches/dpr_batch_00132.csv"
+    },
+    {
+      "group_number": 12,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00133.csv",
+      "last_file": "dpr_batches/dpr_batch_00144.csv"
+    },
+    {
+      "group_number": 13,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00145.csv",
+      "last_file": "dpr_batches/dpr_batch_00156.csv"
+    },
+    {
+      "group_number": 14,
+      "file_count": 12,
+      "record_count": 60000,
+      "first_file": "dpr_batches/dpr_batch_00157.csv",
+      "last_file": "dpr_batches/dpr_batch_00168.csv"
+    },
+    {
+      "group_number": 15,
+      "file_count": 8,
+      "record_count": 35134,
+      "first_file": "dpr_batches/dpr_batch_00169.csv",
+      "last_file": "dpr_batches/dpr_batch_00176.csv"
+    }
+  ],
+  "notes": [
+    "Source CSV files remain unchanged.",
+    "All columns are read as strings.",
+    "Records are profiled in file groups.",
+    "Blank values and placeholders are separate.",
+    "Identifier uniqueness has not yet been tested.",
+    "NYC 311 and AMPS are independent source systems."
+  ],
+  "last_updated_utc": "2026-11-15T00:44:11.262015+00:00",
+  "column_quality": [
+    {
+      "column_name": "unique_key",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "created_date",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "closed_date",
+      "missing_count": 121078,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 754056,
+      "missing_percentage": 13.84,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "agency",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "agency_name",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "complaint_type",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "descriptor",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "descriptor_2",
+      "missing_count": 1,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875133,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "location_type",
+      "missing_count": 45,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875089,
+      "missing_percentage": 0.01,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "incident_zip",
+      "missing_count": 6972,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 868162,
+      "missing_percentage": 0.8,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "incident_address",
+      "missing_count": 6753,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 868381,
+      "missing_percentage": 0.77,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "street_name",
+      "missing_count": 6806,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 868328,
+      "missing_percentage": 0.78,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "cross_street_1",
+      "missing_count": 10521,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 864613,
+      "missing_percentage": 1.2,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "cross_street_2",
+      "missing_count": 7908,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 867226,
+      "missing_percentage": 0.9,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "intersection_street_1",
+      "missing_count": 10521,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 864613,
+      "missing_percentage": 1.2,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "intersection_street_2",
+      "missing_count": 7908,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 867226,
+      "missing_percentage": 0.9,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "address_type",
+      "missing_count": 169820,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 705314,
+      "missing_percentage": 19.41,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "city",
+      "missing_count": 55911,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 819223,
+      "missing_percentage": 6.39,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "landmark",
+      "missing_count": 55995,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 819139,
+      "missing_percentage": 6.4,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "facility_type",
+      "missing_count": 875134,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 0,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "status",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "due_date",
+      "missing_count": 875118,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 16,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "resolution_description",
+      "missing_count": 45922,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 829212,
+      "missing_percentage": 5.25,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "resolution_action_updated_date",
+      "missing_count": 45723,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 829411,
+      "missing_percentage": 5.22,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "community_board",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "council_district",
+      "missing_count": 11012,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 864122,
+      "missing_percentage": 1.26,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "police_precinct",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "bbl",
+      "missing_count": 86337,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 788797,
+      "missing_percentage": 9.87,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "borough",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "x_coordinate_state_plane",
+      "missing_count": 10143,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 864991,
+      "missing_percentage": 1.16,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "y_coordinate_state_plane",
+      "missing_count": 10052,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 865082,
+      "missing_percentage": 1.15,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "open_data_channel_type",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "park_facility_name",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "park_borough",
+      "missing_count": 0,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 875134,
+      "missing_percentage": 0.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "vehicle_type",
+      "missing_count": 875134,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 0,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "taxi_company_borough",
+      "missing_count": 875134,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 0,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "taxi_pick_up_location",
+      "missing_count": 875134,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 0,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "bridge_highway_name",
+      "missing_count": 875134,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 0,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "bridge_highway_direction",
+      "missing_count": 875134,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 0,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "road_ramp",
+      "missing_count": 875134,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 0,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "bridge_highway_segment",
+      "missing_count": 875134,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 0,
+      "missing_percentage": 100.0,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "latitude",
+      "missing_count": 10155,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 864979,
+      "missing_percentage": 1.16,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "longitude",
+      "missing_count": 10155,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 864979,
+      "missing_percentage": 1.16,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    },
+    {
+      "column_name": "location",
+      "missing_count": 10155,
+      "dash_placeholder_count": 0,
+      "literal_null_count": 0,
+      "non_missing_count": 864979,
+      "missing_percentage": 1.16,
+      "dash_placeholder_percentage": 0.0,
+      "literal_null_percentage": 0.0
+    }
+  ]
+}

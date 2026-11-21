@@ -1,0 +1,519 @@
+{
+  "project": "AssetFusion360",
+  "audit": "Pipeline Orchestration Inventory",
+  "created_utc": "2026-11-15T06:57:42.605571+00:00",
+  "status": "SOURCE_INSPECTION_COMPLETE",
+  "script_count": 28,
+  "layer_counts": {
+    "Bronze": 5,
+    "Silver": 5,
+    "Gold": 17,
+    "Other": 1
+  },
+  "syntax_errors": [],
+  "pipelines": [
+    {
+      "script": "src/assetfusion360/pipelines/__init__.py",
+      "layer": "Other",
+      "syntax": "PASS",
+      "main_guard_detected": false,
+      "top_level_functions": [],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_assets_ingestion.py",
+      "layer": "Bronze",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "relative_path",
+        "calculate_sha256",
+        "write_json_atomic",
+        "validate_source",
+        "validate_destinations",
+        "create_spark",
+        "load_source_with_spark",
+        "build_arrow_schema",
+        "write_batch",
+        "write_bronze_parquet",
+        "validate_parquet",
+        "ingest_amps_assets_bronze",
+        "create_bronze_assets_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_labor_ingestion.py",
+      "layer": "Bronze",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "utc_now",
+        "relative_path",
+        "calculate_sha256",
+        "read_header",
+        "save_manifest",
+        "validate_output_safety",
+        "discover_sources",
+        "create_spark",
+        "create_spark_schema",
+        "create_arrow_schema",
+        "read_spark_csv",
+        "write_arrow_batch",
+        "validate_parquet_part",
+        "process_batch",
+        "validate_complete_bronze",
+        "ingest_amps_labor_bronze",
+        "create_bronze_labor_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_transaction_details_ingestion.py",
+      "layer": "Bronze",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "utc_now",
+        "relative_path",
+        "calculate_sha256",
+        "read_csv_header",
+        "expected_source_files",
+        "check_output_safety",
+        "validate_sources",
+        "create_spark_session",
+        "create_schemas",
+        "verify_parquet_part",
+        "process_source_batch",
+        "validate_complete_bronze",
+        "ingest_amps_transaction_details_bronze",
+        "create_bronze_transaction_details_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_transactions_ingestion.py",
+      "layer": "Bronze",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "utc_now",
+        "relative",
+        "sha256",
+        "read_header",
+        "expected_source_paths",
+        "ensure_safe_output",
+        "validate_sources",
+        "make_spark",
+        "schemas",
+        "verify_part",
+        "process_batch",
+        "validate_complete",
+        "ingest_amps_transactions_bronze",
+        "create_bronze_transactions_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/bronze_workorders_ingestion.py",
+      "layer": "Bronze",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "utc_now",
+        "relative_path",
+        "sha256_file",
+        "read_header",
+        "save_json_atomic",
+        "check_output_safety",
+        "discover_source_files",
+        "create_spark",
+        "create_spark_schema",
+        "create_arrow_schema",
+        "read_spark_batch",
+        "write_arrow_records",
+        "validate_parquet_part",
+        "process_source_batch",
+        "validate_staging_dataset",
+        "ingest_amps_workorders_bronze",
+        "create_bronze_workorders_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_asset_bridge.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_source",
+        "build_gold_asset_bridge",
+        "create_gold_asset_bridge_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_asset.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "normalize",
+        "check_outputs",
+        "inspect_source",
+        "build_asset_code_index",
+        "transform_record",
+        "build_gold_dim_asset",
+        "create_gold_dim_asset_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_date.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "collect_date_coverage",
+        "make_records",
+        "build_dim_date",
+        "create_dim_date_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_detail_type.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "build_dimension"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_part.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "collect_parts",
+        "build_dim_part"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_transaction_status.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "build_dimension"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_transaction_type.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "build_dimension"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_workorder_priority.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "build_dimension"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_dim_workorder_type.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "build_dimension"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_fact_labor.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_sources",
+        "load_workorder_lookup",
+        "transform_batch",
+        "build_gold_fact_labor",
+        "create_gold_fact_labor_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_fact_transaction_details.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_sources",
+        "load_lookup",
+        "load_references",
+        "resolve_codes",
+        "transform_batch",
+        "build_gold_fact_transaction_details",
+        "create_gold_fact_transaction_details_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_fact_transactions.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_sources",
+        "transform_batch",
+        "build_gold_fact_transactions",
+        "create_gold_fact_transactions_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_fact_workorders.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_sources",
+        "load_asset_bridge",
+        "transform_batch",
+        "build_gold_fact_workorders",
+        "create_gold_fact_workorders_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_labor_monthly_kpis.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_source",
+        "aggregate_labor",
+        "build_gold_labor_monthly_kpis",
+        "create_gold_labor_monthly_kpis_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_material_monthly_kpis.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_source",
+        "category",
+        "aggregate_materials",
+        "build_gold_material_monthly_kpis",
+        "create_gold_material_monthly_kpis_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_transaction_monthly_kpis.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_source",
+        "aggregate_transactions",
+        "build_gold_transaction_monthly_kpis",
+        "create_gold_transaction_monthly_kpis_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/gold_workorder_monthly_kpis.py",
+      "layer": "Gold",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "check_outputs",
+        "inspect_source",
+        "aggregate_workorders",
+        "build_gold_workorder_monthly_kpis",
+        "create_gold_workorder_monthly_kpis_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_assets_transformation.py",
+      "layer": "Silver",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "utc_now",
+        "relative",
+        "sha256_file",
+        "is_missing",
+        "parse_integer",
+        "parse_decimal",
+        "parse_timestamp",
+        "check_safety",
+        "inspect_bronze",
+        "transform_record",
+        "transform_assets",
+        "create_silver_assets_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_labor_transformation.py",
+      "layer": "Silver",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "missing",
+        "parse_integer",
+        "parse_decimal",
+        "parse_date_cached",
+        "parse_date",
+        "transform_row",
+        "check_outputs",
+        "inspect_sources",
+        "transform_labor",
+        "create_silver_labor_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_transaction_details_transformation.py",
+      "layer": "Silver",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "missing",
+        "parse_integer",
+        "parse_decimal",
+        "parse_date_cached",
+        "parse_date",
+        "transform_row",
+        "check_outputs",
+        "inspect_sources",
+        "transform_transaction_details",
+        "create_silver_transaction_details_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_transactions_transformation.py",
+      "layer": "Silver",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "missing",
+        "parse_integer",
+        "parse_date_cached",
+        "parse_date",
+        "transform_row",
+        "check_outputs",
+        "inspect_sources",
+        "transform_transactions",
+        "create_silver_transactions_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    },
+    {
+      "script": "src/assetfusion360/pipelines/silver_workorders_transformation.py",
+      "layer": "Silver",
+      "syntax": "PASS",
+      "main_guard_detected": true,
+      "top_level_functions": [
+        "missing",
+        "parse_int",
+        "parse_decimal",
+        "parse_date_cached",
+        "parse_date",
+        "transform_row",
+        "check_outputs",
+        "inspect_sources",
+        "transform_workorders",
+        "create_silver_workorders_pipeline",
+        "run_kedro_pipeline"
+      ],
+      "execution_tested": false,
+      "rerun_safety_verified": false
+    }
+  ],
+  "remaining_checks": [
+    "Confirm actual execution order and dependencies",
+    "Verify published input/output manifest contracts",
+    "Validate failure handling and safe reruns",
+    "Perform controlled orchestration test",
+    "Prepare cloud migration configuration"
+  ]
+}

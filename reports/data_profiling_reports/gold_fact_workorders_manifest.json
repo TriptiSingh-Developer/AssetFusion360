@@ -1,0 +1,15 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold",
+  "table": "fact_workorders",
+  "status": "COMPLETED",
+  "rows": 2231535,
+  "columns": 23,
+  "parquet_files": 447,
+  "unique_asset_mapping_rows": 2231135,
+  "ambiguous_asset_mapping_rows": 400,
+  "missing_priority_rows": 994238,
+  "missing_completion_rows": 25585,
+  "silver_dq_issue_rows": 0,
+  "created_utc": "2026-11-15T05:04:56.424526+00:00"
+}

@@ -1,0 +1,65 @@
+ASSETFUSION360 - TRANSACTION KPI SCHEMA
+
+TABLE: fact_transactions
+COLUMNS: 27
+transaction_identity: int64
+transaction_code: string
+transaction_code_numeric: int64
+transaction_description: string
+transaction_type: string
+transaction_status: string
+request_code: string
+request_identity: int64
+from_entity: string
+from_code: string
+to_entity: string
+to_code: string
+transaction_date: timestamp[us]
+created_at: timestamp[us]
+updated_at: timestamp[us]
+update_count: int64
+dq_transaction_code_invalid: bool
+dq_transaction_identity_invalid: bool
+dq_transaction_request_invalid: bool
+dq_transaction_updatecount_invalid: bool
+dq_transaction_date_invalid: bool
+dq_transaction_created_invalid: bool
+dq_transaction_updated_invalid: bool
+silver_dq_issue: bool
+source_file: string
+source_batch: string
+source_ingested_at: string
+
+TABLE: fact_transaction_details
+COLUMNS: 31
+detail_identity: int64
+transaction_code: string
+transaction_identity: int64
+transaction_match_status: string
+workorder_code: string
+workorder_identity: int64
+workorder_match_status: string
+transaction_line: string
+detail_type: string
+activity_code: string
+detail_description: string
+detail_date: timestamp[us]
+detail_created_at: timestamp[us]
+detail_updated_at: timestamp[us]
+part_code: string
+part_identity: int64
+part_description: string
+part_class: string
+part_uom: string
+store_code: string
+bin_code: string
+quantity: decimal128(20, 6)
+unit_price: decimal128(20, 6)
+average_price: decimal128(20, 6)
+negative_quantity_flag: bool
+negative_price_flag: bool
+zero_quantity_flag: bool
+zero_price_flag: bool
+silver_dq_issue: bool
+source_file: string
+source_batch: string

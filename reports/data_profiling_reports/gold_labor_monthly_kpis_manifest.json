@@ -1,0 +1,21 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold Analytics",
+  "table": "gold_labor_monthly_kpis",
+  "status": "COMPLETED",
+  "source": "data/04_gold_analytics/fact_labor",
+  "output": "data/04_gold_analytics/gold_labor_monthly_kpis/part-00000.parquet",
+  "rows": 232,
+  "columns": 8,
+  "parquet_files": 1,
+  "source_labor_rows": 3230423,
+  "reporting_months": 214,
+  "first_month": "2009-01",
+  "last_month": "2026-10",
+  "matched_labor_rows": 3217345,
+  "unmatched_labor_rows": 13078,
+  "negative_hours_rows": 74609,
+  "negative_cost_rows": 71374,
+  "zero_rate_rows": 188165,
+  "created_utc": "2026-11-15T05:50:17.441192+00:00"
+}

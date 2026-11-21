@@ -1,0 +1,37 @@
+{
+  "project": "AssetFusion360",
+  "phase": "Silver",
+  "step": "6.5",
+  "dataset": "AMPS Transactions",
+  "status": "COMPLETED",
+  "engine": "PyArrow",
+  "orchestration": "Kedro SequentialRunner",
+  "bronze_source": "data/02_bronze_ingested_data/amps_transactions",
+  "silver_output": "data/03_silver_cleaned_data/amps_transactions",
+  "bronze_rows": 755122,
+  "silver_rows": 755122,
+  "bronze_columns": 18,
+  "silver_columns": 33,
+  "parquet_files": 152,
+  "original_source_fields_preserved": true,
+  "row_count_preserved": true,
+  "quality_flag_counts": {
+    "dq_transaction_code_invalid": 0,
+    "dq_transaction_identity_invalid": 0,
+    "dq_transaction_request_invalid": 0,
+    "dq_transaction_updatecount_invalid": 0,
+    "dq_transaction_date_invalid": 0,
+    "dq_transaction_created_invalid": 0,
+    "dq_transaction_updated_invalid": 0,
+    "dq_any_issue": 0
+  },
+  "transformation_notes": [
+    "Preserve original transaction business codes.",
+    "Preserve mixed-format from/to reference codes.",
+    "Keep tra_req null when absent.",
+    "Convert tra_updatecount to integer, not date.",
+    "Do not delete, deduplicate, or impute records.",
+    "Preserve all original Bronze source-lineage fields."
+  ],
+  "created_utc": "2026-11-15T04:01:38.558286+00:00"
+}

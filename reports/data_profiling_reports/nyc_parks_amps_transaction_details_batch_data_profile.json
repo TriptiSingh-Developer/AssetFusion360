@@ -1,0 +1,520 @@
+{
+  "project": "AssetFusion360",
+  "profiling_step": "4.6E",
+  "dataset": "NYC Parks AMPS Transaction Details",
+  "source_directory": "data\\01_raw_source_data\\nyc_parks_asset_management\\transaction_details_batches",
+  "profile_timestamp_utc": "2026-11-15T00:27:48.848603+00:00",
+  "spark_version": "3.5.7",
+  "total_source_files": 461,
+  "total_records": 2301927,
+  "total_columns": 31,
+  "csv_reader_configuration": {
+    "header": true,
+    "quote": "\"",
+    "escape": "\"",
+    "multiLine": true,
+    "enforceSchema": false,
+    "inferSchema": false,
+    "mode": "FAILFAST"
+  },
+  "source_schema": [
+    {
+      "column_name": "trl_trans",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_type",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_line",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_date",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_event",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_act",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_part",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_reqline",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_bin",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_store",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_price",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_qty",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_req",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_created",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_updated",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_avgprice",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_sqlidentity",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_desc",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "trl_attach",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_code",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_desc",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_class",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_uom",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_notused",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_created",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_updated",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_updatecount",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_sqlidentity",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_udfchar01",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_udfchar02",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "par_laststatusupdate",
+      "data_type": "string",
+      "nullable": true
+    }
+  ],
+  "column_quality": [
+    {
+      "column_name": "trl_trans",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_type",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_line",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_date",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_event",
+      "source_data_type": "string",
+      "missing_count": 1492783,
+      "non_missing_count": 809144,
+      "missing_percentage": 64.85,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_act",
+      "source_data_type": "string",
+      "missing_count": 2072691,
+      "non_missing_count": 229236,
+      "missing_percentage": 90.04,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_part",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_reqline",
+      "source_data_type": "string",
+      "missing_count": 1282991,
+      "non_missing_count": 1018936,
+      "missing_percentage": 55.74,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_bin",
+      "source_data_type": "string",
+      "missing_count": 45746,
+      "non_missing_count": 2256181,
+      "missing_percentage": 1.99,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_store",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_price",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_qty",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_req",
+      "source_data_type": "string",
+      "missing_count": 1282991,
+      "non_missing_count": 1018936,
+      "missing_percentage": 55.74,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_created",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_updated",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_avgprice",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_sqlidentity",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2301927,
+      "missing_percentage": 0.0,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_desc",
+      "source_data_type": "string",
+      "missing_count": 2274036,
+      "non_missing_count": 27891,
+      "missing_percentage": 98.79,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "trl_attach",
+      "source_data_type": "string",
+      "missing_count": 1523572,
+      "non_missing_count": 778355,
+      "missing_percentage": 66.19,
+      "dash_placeholder_count": 98919,
+      "dash_placeholder_percentage": 4.3
+    },
+    {
+      "column_name": "par_code",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_desc",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_class",
+      "source_data_type": "string",
+      "missing_count": 28079,
+      "non_missing_count": 2273848,
+      "missing_percentage": 1.22,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_uom",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_notused",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 2226331,
+      "dash_placeholder_percentage": 96.72
+    },
+    {
+      "column_name": "par_created",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_updated",
+      "source_data_type": "string",
+      "missing_count": 325693,
+      "non_missing_count": 1976234,
+      "missing_percentage": 14.15,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_updatecount",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_sqlidentity",
+      "source_data_type": "string",
+      "missing_count": 27891,
+      "non_missing_count": 2274036,
+      "missing_percentage": 1.21,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_udfchar01",
+      "source_data_type": "string",
+      "missing_count": 42621,
+      "non_missing_count": 2259306,
+      "missing_percentage": 1.85,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_udfchar02",
+      "source_data_type": "string",
+      "missing_count": 2291999,
+      "non_missing_count": 9928,
+      "missing_percentage": 99.57,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    },
+    {
+      "column_name": "par_laststatusupdate",
+      "source_data_type": "string",
+      "missing_count": 477522,
+      "non_missing_count": 1824405,
+      "missing_percentage": 20.74,
+      "dash_placeholder_count": 0,
+      "dash_placeholder_percentage": 0.0
+    }
+  ],
+  "candidate_identifier_columns": [
+    "trl_sqlidentity",
+    "par_sqlidentity"
+  ],
+  "candidate_identifier_validation": {
+    "trl_sqlidentity": {
+      "total_records": 2301927,
+      "non_missing_records": 2301927,
+      "missing_records": 0,
+      "distinct_identifiers": 2301927,
+      "duplicate_excess_rows": 0,
+      "is_complete": true,
+      "is_unique": true,
+      "is_candidate_record_key": true
+    },
+    "par_sqlidentity": {
+      "total_records": 2301927,
+      "non_missing_records": 2274036,
+      "missing_records": 27891,
+      "distinct_identifiers": 14422,
+      "duplicate_excess_rows": 2259614,
+      "is_complete": false,
+      "is_unique": false,
+      "is_candidate_record_key": false
+    }
+  },
+  "potential_relationship_columns": [
+    "trl_trans",
+    "trl_event",
+    "trl_part",
+    "trl_reqline",
+    "trl_store",
+    "trl_req",
+    "trl_sqlidentity",
+    "par_code",
+    "par_sqlidentity"
+  ],
+  "sample_inspection": {
+    "sample_count_requested": 5,
+    "sample_columns": [
+      "trl_trans",
+      "trl_type",
+      "trl_line",
+      "trl_date",
+      "trl_event",
+      "trl_act",
+      "trl_part",
+      "trl_reqline",
+      "trl_bin",
+      "trl_store"
+    ]
+  },
+  "notes": [
+    "All 461 CSV headers are validated.",
+    "Original source data is unchanged.",
+    "All fields are read as strings.",
+    "Embedded CSV quotes are supported.",
+    "Dash placeholders are counted separately.",
+    "Candidate keys require business validation.",
+    "Parent transaction references require FK checks.",
+    "No source rows are deliberately excluded."
+  ]
+}

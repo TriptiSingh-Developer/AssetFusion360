@@ -1,0 +1,32 @@
+{
+  "project": "AssetFusion360",
+  "phase": "Silver",
+  "step": "6.4",
+  "dataset": "AMPS Labor",
+  "status": "COMPLETED",
+  "engine": "PyArrow",
+  "orchestration": "Kedro SequentialRunner",
+  "bronze_source": "data/02_bronze_ingested_data/amps_labor",
+  "silver_output": "data/03_silver_cleaned_data/amps_labor",
+  "bronze_rows": 3230423,
+  "silver_rows": 3230423,
+  "bronze_columns": 22,
+  "silver_columns": 38,
+  "parquet_files": 647,
+  "original_source_fields_preserved": true,
+  "row_count_preserved": true,
+  "quality_flag_counts": {
+    "dq_labor_identity_invalid": 0,
+    "dq_workorder_reference_invalid": 0,
+    "dq_labor_date_invalid": 0,
+    "dq_labor_hours_invalid": 0,
+    "dq_labor_rate_invalid": 0,
+    "dq_labor_cost_invalid": 0,
+    "dq_negative_labor_hours": 74609,
+    "dq_negative_labor_cost": 71374,
+    "dq_zero_labor_rate": 188165,
+    "dq_any_issue": 0
+  },
+  "financial_value_policy": "Preserve negative hours/costs and zero rates; flag for later investigation.",
+  "created_utc": "2026-11-15T03:56:49.851722+00:00"
+}

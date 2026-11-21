@@ -1,0 +1,2278 @@
+{
+  "project": "AssetFusion360",
+  "step": "4.8",
+  "generated_utc": "2026-11-15T01:42:19.416319+00:00",
+  "assessment_scope": "Previously saved source profiling and relationship validation reports",
+  "dataset_inventory": [
+    {
+      "dataset": "AMPS Assets",
+      "domain": "NYC Parks AMPS",
+      "source_report": "nyc_parks_amps_assets_profile.json",
+      "records": 148522,
+      "expected_records": 148522,
+      "record_count_status": "MATCH",
+      "columns": 29,
+      "column_quality_available": true,
+      "columns_with_quality_statistics": 29,
+      "high_missing_columns_20pct_or_more": [
+        {
+          "column": "OBJ_VALUE",
+          "missing_records": 147593,
+          "missing_percentage": 99.37
+        },
+        {
+          "column": "OBJ_UDFCHAR06",
+          "missing_records": 147567,
+          "missing_percentage": 99.36
+        },
+        {
+          "column": "OBJ_POSITION",
+          "missing_records": 147425,
+          "missing_percentage": 99.26
+        },
+        {
+          "column": "OBJ_UDFCHAR02",
+          "missing_records": 145285,
+          "missing_percentage": 97.82
+        },
+        {
+          "column": "OBJ_MANUFACT",
+          "missing_records": 143403,
+          "missing_percentage": 96.55
+        },
+        {
+          "column": "OBJ_UDFCHAR01",
+          "missing_records": 143315,
+          "missing_percentage": 96.49
+        },
+        {
+          "column": "OBJ_CATEGORY",
+          "missing_records": 136367,
+          "missing_percentage": 91.82
+        },
+        {
+          "column": "OBJ_UDFCHAR05",
+          "missing_records": 124624,
+          "missing_percentage": 83.91
+        },
+        {
+          "column": "OBJ_PARENT",
+          "missing_records": 115359,
+          "missing_percentage": 77.67
+        },
+        {
+          "column": "OBJ_MANUFACTMODEL",
+          "missing_records": 112642,
+          "missing_percentage": 75.84
+        },
+        {
+          "column": "OBJ_SERIALNO",
+          "missing_records": 110715,
+          "missing_percentage": 74.54
+        },
+        {
+          "column": "OBJ_GISLAYER",
+          "missing_records": 98023,
+          "missing_percentage": 66.0
+        },
+        {
+          "column": "OBJ_XLOCATION",
+          "missing_records": 98023,
+          "missing_percentage": 66.0
+        },
+        {
+          "column": "OBJ_YLOCATION",
+          "missing_records": 98023,
+          "missing_percentage": 66.0
+        },
+        {
+          "column": "OBJ_GISOBJID",
+          "missing_records": 97895,
+          "missing_percentage": 65.91
+        },
+        {
+          "column": "OBJ_WITHDRAW",
+          "missing_records": 84198,
+          "missing_percentage": 56.69
+        },
+        {
+          "column": "OBJ_CREATED",
+          "missing_records": 73936,
+          "missing_percentage": 49.78
+        },
+        {
+          "column": "OBJ_CLASS",
+          "missing_records": 40301,
+          "missing_percentage": 27.13
+        },
+        {
+          "column": "OBJ_NOTUSED",
+          "missing_records": 38918,
+          "missing_percentage": 26.2
+        },
+        {
+          "column": "OBJ_UPDATED",
+          "missing_records": 38918,
+          "missing_percentage": 26.2
+        }
+      ],
+      "reported_column_quality": [
+        {
+          "column": "OBJ_OBTYPE",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_CODE",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_DESC",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_CLASS",
+          "missing": 40301,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_CATEGORY",
+          "missing": 136367,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_POSITION",
+          "missing": 147425,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_PARENT",
+          "missing": 115359,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_MANUFACT",
+          "missing": 143403,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_MRC",
+          "missing": 90,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_SERIALNO",
+          "missing": 110715,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_STATUS",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_COMMISS",
+          "missing": 1,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_WITHDRAW",
+          "missing": 84198,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_RECORD",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_NOTUSED",
+          "missing": 38918,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_MANUFACTMODEL",
+          "missing": 112642,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_VALUE",
+          "missing": 147593,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_UPDATED",
+          "missing": 38918,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_UPDATECOUNT",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_GISOBJID",
+          "missing": 97895,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_SQLIDENTITY",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_GISLAYER",
+          "missing": 98023,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_XLOCATION",
+          "missing": 98023,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_YLOCATION",
+          "missing": 98023,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_UDFCHAR01",
+          "missing": 143315,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_UDFCHAR02",
+          "missing": 145285,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_UDFCHAR05",
+          "missing": 124624,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_UDFCHAR06",
+          "missing": 147567,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OBJ_CREATED",
+          "missing": 73936,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        }
+      ]
+    },
+    {
+      "dataset": "AMPS Work Orders",
+      "domain": "NYC Parks AMPS",
+      "source_report": "nyc_parks_amps_workorders_batch_data_profile.json",
+      "records": 2231535,
+      "expected_records": 2231535,
+      "record_count_status": "MATCH",
+      "columns": 55,
+      "column_quality_available": true,
+      "columns_with_quality_statistics": 55,
+      "high_missing_columns_20pct_or_more": [
+        {
+          "column": "evt_udfchar02",
+          "missing_records": 2231453,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "evt_udfchar04",
+          "missing_records": 2231453,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "evt_udfchar16",
+          "missing_records": 2228191,
+          "missing_percentage": 99.85
+        },
+        {
+          "column": "evt_udfchar15",
+          "missing_records": 2208599,
+          "missing_percentage": 98.97
+        },
+        {
+          "column": "evt_udfnum01",
+          "missing_records": 2184714,
+          "missing_percentage": 97.9
+        },
+        {
+          "column": "evt_parent",
+          "missing_records": 2156101,
+          "missing_percentage": 96.62
+        },
+        {
+          "column": "evt_due",
+          "missing_records": 2150630,
+          "missing_percentage": 96.37
+        },
+        {
+          "column": "evt_ppm",
+          "missing_records": 2130626,
+          "missing_percentage": 95.48
+        },
+        {
+          "column": "evt_freq",
+          "missing_records": 2127574,
+          "missing_percentage": 95.34
+        },
+        {
+          "column": "evt_perioduom",
+          "missing_records": 2127574,
+          "missing_percentage": 95.34
+        },
+        {
+          "column": "evt_route",
+          "missing_records": 2121345,
+          "missing_percentage": 95.06
+        },
+        {
+          "column": "evt_udfchar05",
+          "missing_records": 2114549,
+          "missing_percentage": 94.76
+        },
+        {
+          "column": "evt_udfchar11",
+          "missing_records": 2107448,
+          "missing_percentage": 94.44
+        },
+        {
+          "column": "evt_udfchar14",
+          "missing_records": 2021217,
+          "missing_percentage": 90.58
+        },
+        {
+          "column": "evt_udfchar01",
+          "missing_records": 1532634,
+          "missing_percentage": 68.68
+        },
+        {
+          "column": "evt_reqm",
+          "missing_records": 1396917,
+          "missing_percentage": 62.6
+        },
+        {
+          "column": "evt_udfchar10",
+          "missing_records": 1208297,
+          "missing_percentage": 54.15
+        },
+        {
+          "column": "evt_start",
+          "missing_records": 1152227,
+          "missing_percentage": 51.63
+        },
+        {
+          "column": "evt_target",
+          "missing_records": 1131933,
+          "missing_percentage": 50.72
+        },
+        {
+          "column": "evt_schedend",
+          "missing_records": 1131063,
+          "missing_percentage": 50.69
+        },
+        {
+          "column": "evt_udfchar12",
+          "missing_records": 1075338,
+          "missing_percentage": 48.19
+        },
+        {
+          "column": "evt_priority",
+          "missing_records": 994238,
+          "missing_percentage": 44.55
+        },
+        {
+          "column": "evt_udfchar06",
+          "missing_records": 918270,
+          "missing_percentage": 41.15
+        },
+        {
+          "column": "evt_standwork",
+          "missing_records": 917475,
+          "missing_percentage": 41.11
+        },
+        {
+          "column": "evt_udfchar08",
+          "missing_records": 859189,
+          "missing_percentage": 38.5
+        },
+        {
+          "column": "evt_udfchar03",
+          "missing_records": 779064,
+          "missing_percentage": 34.91
+        },
+        {
+          "column": "evt_updated",
+          "missing_records": 730472,
+          "missing_percentage": 32.73
+        },
+        {
+          "column": "evt_class",
+          "missing_records": 696764,
+          "missing_percentage": 31.22
+        }
+      ],
+      "reported_column_quality": [
+        {
+          "column": "evt_code",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_desc",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_type",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_date",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_mrc",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_printed",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_obtype",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_object",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_standwork",
+          "missing": 917475,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_ppm",
+          "missing": 2130626,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_freq",
+          "missing": 2127574,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_isstype",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_class",
+          "missing": 696764,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_route",
+          "missing": 2121345,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_target",
+          "missing": 1131933,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_duration",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_parent",
+          "missing": 2156101,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_reqm",
+          "missing": 1396917,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_jobtype",
+          "missing": 282330,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_priority",
+          "missing": 994238,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_reported",
+          "missing": 336353,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_start",
+          "missing": 1152227,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_due",
+          "missing": 2150630,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_completed",
+          "missing": 25585,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_warranty",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_safety",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_reopened",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_schedend",
+          "missing": 1131063,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_created",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_updated",
+          "missing": 730472,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_updatecount",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_perioduom",
+          "missing": 2127574,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_sqlidentity",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_multiequip",
+          "missing": 0,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_completed_trunc",
+          "missing": 25585,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar01",
+          "missing": 1532634,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar02",
+          "missing": 2231453,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar03",
+          "missing": 779064,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar04",
+          "missing": 2231453,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar05",
+          "missing": 2114549,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar06",
+          "missing": 918270,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar08",
+          "missing": 859189,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar10",
+          "missing": 1208297,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar11",
+          "missing": 2107448,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar12",
+          "missing": 1075338,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar13",
+          "missing": 60378,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar14",
+          "missing": 2021217,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar15",
+          "missing": 2208599,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchar16",
+          "missing": 2228191,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfnum01",
+          "missing": 2184714,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchkbox01",
+          "missing": 2132,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchkbox02",
+          "missing": 2156,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchkbox03",
+          "missing": 2156,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchkbox04",
+          "missing": 2156,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "evt_udfchkbox05",
+          "missing": 5600,
+          "dash_placeholders": null,
+          "literal_null_placeholders": null
+        }
+      ]
+    },
+    {
+      "dataset": "AMPS Labor",
+      "domain": "NYC Parks AMPS",
+      "source_report": "nyc_parks_amps_labor_batch_data_profile.json",
+      "records": 3230423,
+      "expected_records": 3230423,
+      "record_count_status": "MATCH",
+      "columns": 18,
+      "column_quality_available": true,
+      "columns_with_quality_statistics": 18,
+      "high_missing_columns_20pct_or_more": [
+        {
+          "column": "boo_desc",
+          "missing_records": 3228910,
+          "missing_percentage": 99.95
+        },
+        {
+          "column": "boo_on",
+          "missing_records": 3223636,
+          "missing_percentage": 99.79
+        },
+        {
+          "column": "boo_off",
+          "missing_records": 3223636,
+          "missing_percentage": 99.79
+        },
+        {
+          "column": "boo_jecategory",
+          "missing_records": 3214878,
+          "missing_percentage": 99.52
+        },
+        {
+          "column": "boo_jesource",
+          "missing_records": 3214877,
+          "missing_percentage": 99.52
+        }
+      ],
+      "reported_column_quality": [
+        {
+          "column": "boo_event",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_act",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_date",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_trade",
+          "missing": 19190,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_octype",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_on",
+          "missing": 3223636,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_off",
+          "missing": 3223636,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_hours",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_rate",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_cost",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_entered",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_correction",
+          "missing": 0,
+          "dash_placeholders": 3155837,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_sqlidentity",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_jecategory",
+          "missing": 3214878,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_jesource",
+          "missing": 3214877,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_desc",
+          "missing": 3228910,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_code",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "boo_misc",
+          "missing": 0,
+          "dash_placeholders": 3229038,
+          "literal_null_placeholders": null
+        }
+      ]
+    },
+    {
+      "dataset": "AMPS Transactions",
+      "domain": "NYC Parks AMPS",
+      "source_report": "nyc_parks_amps_transactions_batch_data_profile.json",
+      "records": 755122,
+      "expected_records": 755122,
+      "record_count_status": "MATCH",
+      "columns": 14,
+      "column_quality_available": true,
+      "columns_with_quality_statistics": 14,
+      "high_missing_columns_20pct_or_more": [
+        {
+          "column": "tra_req",
+          "missing_records": 593470,
+          "missing_percentage": 78.59
+        }
+      ],
+      "reported_column_quality": [
+        {
+          "column": "tra_code",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_desc",
+          "missing": 0,
+          "dash_placeholders": 1,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_type",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_date",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_req",
+          "missing": 593470,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_status",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_fromentity",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_fromcode",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_toentity",
+          "missing": 27469,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_tocode",
+          "missing": 27469,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_updatecount",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_created",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_updated",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "tra_sqlidentity",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        }
+      ]
+    },
+    {
+      "dataset": "AMPS Transaction Details",
+      "domain": "NYC Parks AMPS",
+      "source_report": "nyc_parks_amps_transaction_details_batch_data_profile.json",
+      "records": 2301927,
+      "expected_records": 2301927,
+      "record_count_status": "MATCH",
+      "columns": 31,
+      "column_quality_available": true,
+      "columns_with_quality_statistics": 31,
+      "high_missing_columns_20pct_or_more": [
+        {
+          "column": "par_udfchar02",
+          "missing_records": 2291999,
+          "missing_percentage": 99.57
+        },
+        {
+          "column": "trl_desc",
+          "missing_records": 2274036,
+          "missing_percentage": 98.79
+        },
+        {
+          "column": "trl_act",
+          "missing_records": 2072691,
+          "missing_percentage": 90.04
+        },
+        {
+          "column": "trl_attach",
+          "missing_records": 1523572,
+          "missing_percentage": 66.19
+        },
+        {
+          "column": "trl_event",
+          "missing_records": 1492783,
+          "missing_percentage": 64.85
+        },
+        {
+          "column": "trl_reqline",
+          "missing_records": 1282991,
+          "missing_percentage": 55.74
+        },
+        {
+          "column": "trl_req",
+          "missing_records": 1282991,
+          "missing_percentage": 55.74
+        },
+        {
+          "column": "par_laststatusupdate",
+          "missing_records": 477522,
+          "missing_percentage": 20.74
+        }
+      ],
+      "reported_column_quality": [
+        {
+          "column": "trl_trans",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_type",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_line",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_date",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_event",
+          "missing": 1492783,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_act",
+          "missing": 2072691,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_part",
+          "missing": 27891,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_reqline",
+          "missing": 1282991,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_bin",
+          "missing": 45746,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_store",
+          "missing": 27891,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_price",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_qty",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_req",
+          "missing": 1282991,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_created",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_updated",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_avgprice",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_sqlidentity",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_desc",
+          "missing": 2274036,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "trl_attach",
+          "missing": 1523572,
+          "dash_placeholders": 98919,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_code",
+          "missing": 27891,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_desc",
+          "missing": 27891,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_class",
+          "missing": 28079,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_uom",
+          "missing": 27891,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_notused",
+          "missing": 27891,
+          "dash_placeholders": 2226331,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_created",
+          "missing": 27891,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_updated",
+          "missing": 325693,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_updatecount",
+          "missing": 27891,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_sqlidentity",
+          "missing": 27891,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_udfchar01",
+          "missing": 42621,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_udfchar02",
+          "missing": 2291999,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "par_laststatusupdate",
+          "missing": 477522,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        }
+      ]
+    },
+    {
+      "dataset": "AI4I Predictive Maintenance",
+      "domain": "AI4I",
+      "source_report": "ai4i_predictive_maintenance_data_profile.json",
+      "records": 10000,
+      "expected_records": 10000,
+      "record_count_status": "MATCH",
+      "columns": 14,
+      "column_quality_available": true,
+      "columns_with_quality_statistics": 14,
+      "high_missing_columns_20pct_or_more": [],
+      "reported_column_quality": [
+        {
+          "column": "UDI",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "Product ID",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "Type",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "Air temperature [K]",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "Process temperature [K]",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "Rotational speed [rpm]",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "Torque [Nm]",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "Tool wear [min]",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "Machine failure",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "TWF",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "HDF",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "PWF",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "OSF",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        },
+        {
+          "column": "RNF",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": null
+        }
+      ]
+    },
+    {
+      "dataset": "NYC 311 Service Requests",
+      "domain": "NYC 311",
+      "source_report": "nyc_311_service_requests_data_profile.json",
+      "records": 875134,
+      "expected_records": 875134,
+      "record_count_status": "MATCH",
+      "columns": 44,
+      "column_quality_available": true,
+      "columns_with_quality_statistics": 44,
+      "high_missing_columns_20pct_or_more": [
+        {
+          "column": "facility_type",
+          "missing_records": 875134,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "due_date",
+          "missing_records": 875118,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "vehicle_type",
+          "missing_records": 875134,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "taxi_company_borough",
+          "missing_records": 875134,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "taxi_pick_up_location",
+          "missing_records": 875134,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "bridge_highway_name",
+          "missing_records": 875134,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "bridge_highway_direction",
+          "missing_records": 875134,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "road_ramp",
+          "missing_records": 875134,
+          "missing_percentage": 100.0
+        },
+        {
+          "column": "bridge_highway_segment",
+          "missing_records": 875134,
+          "missing_percentage": 100.0
+        }
+      ],
+      "reported_column_quality": [
+        {
+          "column": "unique_key",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "created_date",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "closed_date",
+          "missing": 121078,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "agency",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "agency_name",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "complaint_type",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "descriptor",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "descriptor_2",
+          "missing": 1,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "location_type",
+          "missing": 45,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "incident_zip",
+          "missing": 6972,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "incident_address",
+          "missing": 6753,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "street_name",
+          "missing": 6806,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "cross_street_1",
+          "missing": 10521,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "cross_street_2",
+          "missing": 7908,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "intersection_street_1",
+          "missing": 10521,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "intersection_street_2",
+          "missing": 7908,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "address_type",
+          "missing": 169820,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "city",
+          "missing": 55911,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "landmark",
+          "missing": 55995,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "facility_type",
+          "missing": 875134,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "status",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "due_date",
+          "missing": 875118,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "resolution_description",
+          "missing": 45922,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "resolution_action_updated_date",
+          "missing": 45723,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "community_board",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "council_district",
+          "missing": 11012,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "police_precinct",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "bbl",
+          "missing": 86337,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "borough",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "x_coordinate_state_plane",
+          "missing": 10143,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "y_coordinate_state_plane",
+          "missing": 10052,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "open_data_channel_type",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "park_facility_name",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "park_borough",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "vehicle_type",
+          "missing": 875134,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "taxi_company_borough",
+          "missing": 875134,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "taxi_pick_up_location",
+          "missing": 875134,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "bridge_highway_name",
+          "missing": 875134,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "bridge_highway_direction",
+          "missing": 875134,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "road_ramp",
+          "missing": 875134,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "bridge_highway_segment",
+          "missing": 875134,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "latitude",
+          "missing": 10155,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "longitude",
+          "missing": 10155,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "location",
+          "missing": 10155,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        }
+      ]
+    },
+    {
+      "dataset": "Parks Inspections",
+      "domain": "Parks Inspections",
+      "source_report": "supplementary_inspection_data_profile.json",
+      "records": 153093,
+      "expected_records": 153093,
+      "record_count_status": "MATCH",
+      "columns": 20,
+      "column_quality_available": true,
+      "columns_with_quality_statistics": 20,
+      "high_missing_columns_20pct_or_more": [
+        {
+          "column": "Safety Condition",
+          "missing_records": 151995,
+          "missing_percentage": 99.28
+        },
+        {
+          "column": "Structural Condition",
+          "missing_records": 151995,
+          "missing_percentage": 99.28
+        },
+        {
+          "column": "inspector2",
+          "missing_records": 150478,
+          "missing_percentage": 98.29
+        },
+        {
+          "column": "Closed?",
+          "missing_records": 144646,
+          "missing_percentage": 94.48
+        },
+        {
+          "column": "Comments",
+          "missing_records": 120505,
+          "missing_percentage": 78.71
+        },
+        {
+          "column": "VisitorCount",
+          "missing_records": 83477,
+          "missing_percentage": 54.53
+        },
+        {
+          "column": "inspAddedDate",
+          "missing_records": 41726,
+          "missing_percentage": 27.26
+        }
+      ],
+      "reported_column_quality": [
+        {
+          "column": "Prop ID",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "AMPSDistrict",
+          "missing": 468,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Inspection ID",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Season",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Round",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Date",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "BeginInspection",
+          "missing": 42,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "EndInspection",
+          "missing": 31,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Inspection Year",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "inspector",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "inspector2",
+          "missing": 150478,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Overall Condition",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Cleanliness",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Safety Condition",
+          "missing": 151995,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Structural Condition",
+          "missing": 151995,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "VisitorCount",
+          "missing": 83477,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Closed?",
+          "missing": 144646,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "Comments",
+          "missing": 120505,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "InspectionType",
+          "missing": 0,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        },
+        {
+          "column": "inspAddedDate",
+          "missing": 41726,
+          "dash_placeholders": 0,
+          "literal_null_placeholders": 0
+        }
+      ]
+    }
+  ],
+  "verified_record_total": 9705756,
+  "expected_record_total": 9705756,
+  "inventory_count_status": "MATCH",
+  "amps_relationships": [
+    {
+      "name": "Assets_to_WorkOrders",
+      "parent_dataset": "assets",
+      "parent_column": "OBJ_CODE",
+      "child_dataset": "workorders",
+      "child_column": "evt_object",
+      "total_child_rows": 2231535,
+      "matched": 2231535,
+      "unmatched": 0,
+      "missing_references": 0,
+      "match_percentage_of_populated": 100.0,
+      "match_percentage_of_all_rows": 100.0
+    },
+    {
+      "name": "WorkOrders_to_Labor",
+      "parent_dataset": "workorders",
+      "parent_column": "evt_code",
+      "child_dataset": "labor",
+      "child_column": "boo_event",
+      "total_child_rows": 3230423,
+      "matched": 3217345,
+      "unmatched": 13078,
+      "missing_references": 0,
+      "match_percentage_of_populated": 99.6,
+      "match_percentage_of_all_rows": 99.6
+    },
+    {
+      "name": "Transactions_to_TransactionDetails",
+      "parent_dataset": "transactions",
+      "parent_column": "tra_code",
+      "child_dataset": "transaction_details",
+      "child_column": "trl_trans",
+      "total_child_rows": 2301927,
+      "matched": 2300536,
+      "unmatched": 1391,
+      "missing_references": 0,
+      "match_percentage_of_populated": 99.94,
+      "match_percentage_of_all_rows": 99.94
+    },
+    {
+      "name": "WorkOrders_to_TransactionDetails",
+      "parent_dataset": "workorders",
+      "parent_column": "evt_code",
+      "child_dataset": "transaction_details",
+      "child_column": "trl_event",
+      "total_child_rows": 2301927,
+      "matched": 809009,
+      "unmatched": 135,
+      "missing_references": 1492783,
+      "match_percentage_of_populated": 99.98,
+      "match_percentage_of_all_rows": 35.14
+    }
+  ],
+  "inspection_validation": {
+    "parent_column": "OBJ_CODE",
+    "child_column": "Prop ID",
+    "exact_match": {
+      "matching_method": "Trim only; case-sensitive",
+      "total_inspection_records": 153093,
+      "missing_property_references": 0,
+      "populated_property_references": 153093,
+      "matched_inspection_records": 148235,
+      "unmatched_inspection_records": 4858,
+      "match_percentage_of_populated": 96.83,
+      "match_percentage_of_all_records": 96.83,
+      "distinct_matched_property_codes": 3687,
+      "distinct_unmatched_property_codes": 355,
+      "unmatched_property_examples": [
+        {
+          "prop_id": "M010-ZN12&13",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "M010-ZN24&25",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "X039-G01",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "B028-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "B057-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "M010-ZN02&4",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "M010-ZN10&11",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q010-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q015-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q024-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q411-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R013-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R022-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R104-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "X092-G01",
+          "inspection_records": 54
+        }
+      ]
+    },
+    "case_normalized_match": {
+      "matching_method": "Trim and uppercase",
+      "total_inspection_records": 153093,
+      "missing_property_references": 0,
+      "populated_property_references": 153093,
+      "matched_inspection_records": 148235,
+      "unmatched_inspection_records": 4858,
+      "match_percentage_of_populated": 96.83,
+      "match_percentage_of_all_records": 96.83,
+      "distinct_matched_property_codes": 3687,
+      "distinct_unmatched_property_codes": 355,
+      "unmatched_property_examples": [
+        {
+          "prop_id": "M010-ZN12&13",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "M010-ZN24&25",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "X039-G01",
+          "inspection_records": 55
+        },
+        {
+          "prop_id": "B028-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "B057-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "M010-ZN02&4",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "M010-ZN10&11",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q010-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q015-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q024-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "Q411-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R013-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R022-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "R104-G01",
+          "inspection_records": 54
+        },
+        {
+          "prop_id": "X092-G01",
+          "inspection_records": 54
+        }
+      ]
+    },
+    "date_validation": {
+      "Date": {
+        "column_name": "Date",
+        "total_rows": 153093,
+        "populated_records": 153093,
+        "missing_or_blank_records": 0,
+        "parseable_records": 153093,
+        "unparseable_records": 0,
+        "parseable_percentage": 100.0,
+        "earliest_parsed_date": "1999-02-23 00:00:00",
+        "latest_parsed_date": "2026-07-31 00:00:00",
+        "raw_date_samples": [
+          "2020 Jul 22 12:00:00 AM",
+          "2020 Jul 23 12:00:00 AM",
+          "2023 Sep 28 12:00:00 AM",
+          "2023 Oct 03 12:00:00 AM",
+          "2023 Oct 05 12:00:00 AM",
+          "2018 May 03 12:00:00 AM",
+          "2017 Sep 13 12:00:00 AM",
+          "2024 Jul 20 12:00:00 AM"
+        ],
+        "unparseable_examples": [],
+        "tested_formats": [
+          "yyyy MMM dd hh:mm:ss a",
+          "yyyy MMM d hh:mm:ss a",
+          "yyyy MMM dd h:mm:ss a",
+          "yyyy-MM-dd HH:mm:ss",
+          "yyyy-MM-dd'T'HH:mm:ss.SSS",
+          "yyyy-MM-dd'T'HH:mm:ss",
+          "yyyy-MM-dd",
+          "MM/dd/yyyy HH:mm:ss",
+          "MM/dd/yyyy hh:mm:ss a",
+          "M/d/yyyy h:mm:ss a",
+          "MM/dd/yyyy",
+          "M/d/yyyy",
+          "MMM d yyyy h:mm:ss a",
+          "MMM d yyyy"
+        ]
+      },
+      "inspAddedDate": {
+        "column_name": "inspAddedDate",
+        "total_rows": 153093,
+        "populated_records": 111367,
+        "missing_or_blank_records": 41726,
+        "parseable_records": 111367,
+        "unparseable_records": 0,
+        "parseable_percentage": 100.0,
+        "earliest_parsed_date": "2008-01-10 19:37:00",
+        "latest_parsed_date": "2026-07-31 17:09:00",
+        "raw_date_samples": [
+          "2020 Jul 15 06:55:00 PM",
+          "2020 Jul 28 01:17:00 PM",
+          "2020 Jul 28 05:17:00 PM",
+          "2020 Jul 29 12:19:00 PM",
+          "2020 Jul 20 01:10:00 PM",
+          "2020 Jul 20 02:50:00 PM",
+          "2020 Jul 30 12:38:00 PM",
+          "2020 Jul 30 03:20:00 PM"
+        ],
+        "unparseable_examples": [],
+        "tested_formats": [
+          "yyyy MMM dd hh:mm:ss a",
+          "yyyy MMM d hh:mm:ss a",
+          "yyyy MMM dd h:mm:ss a",
+          "yyyy-MM-dd HH:mm:ss",
+          "yyyy-MM-dd'T'HH:mm:ss.SSS",
+          "yyyy-MM-dd'T'HH:mm:ss",
+          "yyyy-MM-dd",
+          "MM/dd/yyyy HH:mm:ss",
+          "MM/dd/yyyy hh:mm:ss a",
+          "M/d/yyyy h:mm:ss a",
+          "MM/dd/yyyy",
+          "M/d/yyyy",
+          "MMM d yyyy h:mm:ss a",
+          "MMM d yyyy"
+        ]
+      }
+    },
+    "asset_business_key_validation": {
+      "total_asset_records": 148522,
+      "populated_asset_codes": 148522,
+      "missing_asset_codes": 0,
+      "distinct_asset_codes": 148521,
+      "duplicate_excess_rows": 1,
+      "duplicate_asset_code_examples": [
+        {
+          "asset_code": "B223PA",
+          "record_count": 2
+        }
+      ]
+    },
+    "entity_grain_verified": false,
+    "decision": "Strong identifier evidence; property/asset grain requires business validation."
+  },
+  "quality_risks": [
+    {
+      "id": "DQ-001",
+      "severity": "HIGH",
+      "issue": "Duplicate AMPS OBJ_CODE",
+      "affected_source": "AMPS Assets",
+      "action": "Retain both source rows. Use OBJ_SQLIDENTITY as source record key; resolve business code ambiguity before dimension joins."
+    },
+    {
+      "id": "DQ-002",
+      "severity": "HIGH",
+      "issue": "Labor work-order references unmatched",
+      "affected_source": "AMPS Labor",
+      "action": "Preserve 13,078 labor records; add a referential-integrity status flag."
+    },
+    {
+      "id": "DQ-003",
+      "severity": "HIGH",
+      "issue": "Transaction details without parent transactions",
+      "affected_source": "AMPS Transaction Details",
+      "action": "Preserve 1,391 unmatched details and document the 319 unmatched transaction IDs."
+    },
+    {
+      "id": "DQ-004",
+      "severity": "HIGH",
+      "issue": "Sparse work-order references in transaction details",
+      "affected_source": "AMPS Transaction Details",
+      "action": "Retain NULL trl_event values. Do not invent work-order relationships."
+    },
+    {
+      "id": "DQ-005",
+      "severity": "HIGH",
+      "issue": "Unmatched Parks Inspection property references",
+      "affected_source": "Parks Inspections",
+      "action": "Preserve 4,858 unmatched inspection rows. Confirm property/asset identifier semantics before integration."
+    },
+    {
+      "id": "DQ-006",
+      "severity": "MEDIUM",
+      "issue": "Inspection attributes with high missingness",
+      "affected_source": "Parks Inspections",
+      "action": "Treat safety, structural condition and visitor counts according to observed availability and business definitions."
+    },
+    {
+      "id": "DQ-007",
+      "severity": "MEDIUM",
+      "issue": "Incomplete NYC 311 date and location attributes",
+      "affected_source": "NYC 311",
+      "action": "Retain unclosed requests. Validate dates and geospatial values before KPI calculations."
+    },
+    {
+      "id": "DQ-008",
+      "severity": "HIGH",
+      "issue": "AI4I and NYC Parks are unrelated equipment datasets",
+      "affected_source": "AI4I / AMPS",
+      "action": "Keep AI4I as a separate ML benchmark. Do not map its identifiers or predictions to NYC Parks assets."
+    },
+    {
+      "id": "DQ-009",
+      "severity": "MEDIUM",
+      "issue": "NYC 311 request identifier uniqueness not yet checked",
+      "affected_source": "NYC 311",
+      "action": "Validate unique_key uniqueness and temporal semantics before Silver ingestion rules."
+    },
+    {
+      "id": "DQ-010",
+      "severity": "MEDIUM",
+      "issue": "Source numeric and datetime fields need typed Silver schemas",
+      "affected_source": "All applicable sources",
+      "action": "Define explicit types, parsing rules, invalid-value flags, and preservation of original values."
+    }
+  ],
+  "integration_plan": [
+    {
+      "source": "NYC Parks AMPS",
+      "role": "Primary EAM operational data",
+      "integration_status": "VALIDATED_WITH_EXCEPTIONS",
+      "next_action": "Build source-aligned entities and exception-aware relationships."
+    },
+    {
+      "source": "Parks Inspections",
+      "role": "Property inspections and condition trends",
+      "integration_status": "CANDIDATE_RELATIONSHIP",
+      "next_action": "Validate that Prop ID and OBJ_CODE represent equivalent property entities."
+    },
+    {
+      "source": "NYC 311",
+      "role": "Service demand and geographical context",
+      "integration_status": "NOT_YET_LINKED",
+      "next_action": "Validate request identifiers, then evaluate geographic or facility-level matching without claiming direct FK links."
+    },
+    {
+      "source": "AI4I",
+      "role": "Independent failure-prediction ML benchmark",
+      "integration_status": "SEPARATE_ML_DOMAIN",
+      "next_action": "Develop and evaluate models independently; avoid cross-domain risk claims."
+    }
+  ],
+  "readiness_decision": "READY_FOR_CONTROLLED_BRONZE_DESIGN",
+  "reconciliation_errors": [],
+  "limitations": [
+    "This step does not reread raw CSV records.",
+    "Report-level verification does not replace business validation.",
+    "Source record totals are not unique asset counts.",
+    "Unmatched records must be preserved.",
+    "Inspection property/asset grain is unconfirmed.",
+    "NYC 311 identifier uniqueness remains unverified.",
+    "No cloud pipeline is deployed by this step."
+  ]
+}

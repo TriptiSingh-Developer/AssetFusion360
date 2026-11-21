@@ -1,0 +1,172 @@
+{
+  "project": "AssetFusion360",
+  "step": "5.1",
+  "generated_utc": "2026-11-15T01:53:04.422460+00:00",
+  "project_root": "C:\\Users\\bosss\\Tripti\\Rutgers Details\\Courses\\Capstone Project\\AssetFusion360_Capstone",
+  "installed_versions": {
+    "python": "3.12.3",
+    "kedro": "1.8.0",
+    "pyspark": "3.5.7",
+    "kedro_datasets": "10.0.0",
+    "pyyaml": "6.0.3"
+  },
+  "pyproject": {
+    "exists": true,
+    "project_name": "assetfusion360",
+    "project_version": null,
+    "kedro_package_name": "assetfusion360",
+    "kedro_source_dir": "src",
+    "configuration_parse_error": null
+  },
+  "kedro_configuration": {
+    "conf_directory_exists": true,
+    "environments": [
+      "base",
+      "local"
+    ],
+    "catalog_files": [
+      {
+        "path": "conf/base/catalog.yml",
+        "exists": true,
+        "size_bytes": 0
+      }
+    ],
+    "parameter_files": [
+      {
+        "path": "conf/base/parameters.yml",
+        "exists": true,
+        "size_bytes": 0
+      }
+    ],
+    "other_configuration_files": [
+      "conf/local/.gitkeep",
+      "conf/local/credentials.yml",
+      "conf/README.md"
+    ]
+  },
+  "existing_pipelines": {
+    "package_directory_exists": true,
+    "pipeline_registry": {
+      "path": "src/assetfusion360/pipeline_registry.py",
+      "exists": true,
+      "size_bytes": 431
+    },
+    "pipeline_directories": [],
+    "pipeline_python_modules": [
+      "src/assetfusion360/pipelines/__init__.py"
+    ],
+    "candidate_bronze_modules": []
+  },
+  "existing_bronze_artifacts": {
+    "bronze_directory_exists": true,
+    "top_level_items": [],
+    "file_count": 0,
+    "total_file_bytes": 0,
+    "file_extensions": {},
+    "asset_related_artifacts": [],
+    "sample_paths": []
+  },
+  "existing_data_directories": [
+    {
+      "directory": "data/01_raw_source_data",
+      "exists": true
+    },
+    {
+      "directory": "data/02_bronze_ingested_data",
+      "exists": true
+    },
+    {
+      "directory": "data/02_intermediate_processing_data",
+      "exists": true
+    },
+    {
+      "directory": "data/03_primary_processed_data",
+      "exists": true
+    },
+    {
+      "directory": "data/03_silver_cleaned_data",
+      "exists": true
+    },
+    {
+      "directory": "data/04_feature_engineering_data",
+      "exists": true
+    },
+    {
+      "directory": "data/04_gold_analytics_data",
+      "exists": true
+    },
+    {
+      "directory": "data/05_model_training_input",
+      "exists": true
+    },
+    {
+      "directory": "data/05_predictive_maintenance_features",
+      "exists": true
+    },
+    {
+      "directory": "data/06_model_output",
+      "exists": true
+    },
+    {
+      "directory": "data/06_trained_ml_models",
+      "exists": true
+    },
+    {
+      "directory": "data/07_asset_risk_predictions",
+      "exists": true
+    },
+    {
+      "directory": "data/07_data_quality_reports",
+      "exists": true
+    },
+    {
+      "directory": "data/08_reporting_exports",
+      "exists": true
+    }
+  ],
+  "amps_assets_source": {
+    "path": "data/01_raw_source_data/nyc_parks_asset_management/AMPS_Assets.csv",
+    "exists": true,
+    "size_bytes": 30548504
+  },
+  "existing_quality_reports": [
+    {
+      "path": "reports/data_profiling_reports/assetfusion360_consolidated_source_quality_report.json",
+      "exists": true,
+      "size_bytes": 65873,
+      "json_readable": true,
+      "status": "READY_FOR_CONTROLLED_BRONZE_DESIGN"
+    },
+    {
+      "path": "reports/data_profiling_reports/nyc_parks_amps_assets_profile.json",
+      "exists": true,
+      "size_bytes": 23447,
+      "json_readable": true,
+      "status": null
+    },
+    {
+      "path": "reports/data_profiling_reports/nyc_parks_amps_cross_dataset_relationship_report.json",
+      "exists": true,
+      "size_bytes": 7657,
+      "json_readable": true,
+      "status": "COMPLETED"
+    },
+    {
+      "path": "reports/data_profiling_reports/nyc_parks_inspection_date_and_asset_relationship_report.json",
+      "exists": true,
+      "size_bytes": 7849,
+      "json_readable": true,
+      "status": "COMPLETED"
+    }
+  ],
+  "readiness": "READY_FOR_PIPELINE_DESIGN",
+  "warnings": [],
+  "notes": [
+    "No existing pipeline files were edited.",
+    "No Kedro configuration values were disclosed.",
+    "Raw CSV records were not reprocessed.",
+    "No Bronze datasets were overwritten.",
+    "This audit does not execute Kedro pipelines.",
+    "Existing Bronze outputs require review before choosing new output paths."
+  ]
+}

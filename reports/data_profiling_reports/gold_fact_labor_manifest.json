@@ -1,0 +1,20 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold",
+  "table": "fact_labor",
+  "status": "COMPLETED",
+  "source": "data/03_silver_cleaned_data/amps_labor",
+  "workorder_source": "data/04_gold_analytics/fact_workorders",
+  "output": "data/04_gold_analytics/fact_labor",
+  "rows": 3230423,
+  "columns": 20,
+  "parquet_files": 647,
+  "matched_workorder_rows": 3217345,
+  "unmatched_workorder_rows": 13078,
+  "missing_reference_rows": 0,
+  "negative_hours_rows": 74609,
+  "negative_cost_rows": 71374,
+  "zero_rate_rows": 188165,
+  "silver_dq_issue_rows": 0,
+  "created_utc": "2026-11-15T05:11:59.228528+00:00"
+}

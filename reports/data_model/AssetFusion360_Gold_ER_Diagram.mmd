@@ -1,0 +1,97 @@
+%% AssetFusion360 Gold Warehouse
+%% Conceptual ER diagram - proposed relationships
+%% NOT a deployed Power BI semantic model
+erDiagram
+    dim_asset {
+        string asset_identity
+    }
+    dim_date {
+        string date_key
+        string calendar_date
+    }
+    dim_workorder_type {
+        string workorder_type
+    }
+    dim_workorder_priority {
+        string workorder_priority
+    }
+    dim_transaction_type {
+        string transaction_type
+    }
+    dim_transaction_status {
+        string transaction_status
+    }
+    dim_detail_type {
+        string detail_type
+    }
+    dim_part {
+        string part_key
+        string part_code
+    }
+    bridge_asset_code {
+        string asset_code
+        string resolved_asset_identity
+    }
+    fact_workorders {
+        string workorder_identity
+        string asset_code
+        string workorder_type
+        string workorder_priority
+        string workorder_code
+        string workorder_date
+    }
+    fact_labor {
+        string labor_identity
+        string workorder_code
+        string labor_date
+    }
+    fact_transactions {
+        string transaction_identity
+        string transaction_type
+        string transaction_status
+        string transaction_code
+        string transaction_date
+    }
+    fact_transaction_details {
+        string detail_identity
+        string detail_type
+        string part_code
+        string transaction_code
+        string workorder_code
+        string detail_date
+    }
+    gold_workorder_monthly_kpis {
+        string reporting_month
+        string workorder_type
+        string workorder_count
+    }
+    gold_labor_monthly_kpis {
+        string reporting_month
+        string workorder_match_status
+        string labor_record_count
+    }
+    gold_transaction_monthly_kpis {
+        string reporting_month
+        string transaction_type
+        string transaction_count
+    }
+    gold_material_monthly_kpis {
+        string reporting_month
+        string detail_type
+        string material_detail_count
+    }
+    dim_asset ||..o{ bridge_asset_code : "R1_REVIEW"
+    bridge_asset_code ||..o{ fact_workorders : "R2_REVIEW"
+    dim_workorder_type ||..o{ fact_workorders : "R3_CANDIDATE"
+    dim_workorder_priority ||..o{ fact_workorders : "R4_MAPPING_REQUIRED"
+    dim_transaction_type ||..o{ fact_transactions : "R5_CANDIDATE"
+    dim_transaction_status ||..o{ fact_transactions : "R6_CANDIDATE"
+    dim_detail_type ||..o{ fact_transaction_details : "R7_CANDIDATE"
+    dim_part ||..o{ fact_transaction_details : "R8_MAPPING_REQUIRED"
+    fact_workorders ||..o{ fact_labor : "R9_REVIEW"
+    fact_transactions ||..o{ fact_transaction_details : "R10_REVIEW"
+    fact_workorders ||..o{ fact_transaction_details : "R11_INACTIVE_CANDIDATE"
+    dim_date ||..o{ fact_workorders : "R12_DATE_CAST_REQUIRED"
+    dim_date ||..o{ fact_labor : "R13_DATE_CAST_REQUIRED"
+    dim_date ||..o{ fact_transactions : "R14_DATE_CAST_REQUIRED"
+    dim_date ||..o{ fact_transaction_details : "R15_DATE_CAST_REQUIRED"

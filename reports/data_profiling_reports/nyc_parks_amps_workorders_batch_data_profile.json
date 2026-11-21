@@ -1,0 +1,727 @@
+{
+  "project": "AssetFusion360",
+  "profiling_step": "4.6B",
+  "dataset": "NYC Parks AMPS Work Orders - Batches",
+  "source_directory": "data\\01_raw_source_data\\nyc_parks_asset_management\\workorders_batches",
+  "profile_timestamp_utc": "2026-11-15T00:05:47.122141+00:00",
+  "spark_version": "3.5.7",
+  "total_source_files": 447,
+  "total_records": 2231535,
+  "total_columns": 55,
+  "csv_reader_configuration": {
+    "header": true,
+    "quote": "\"",
+    "escape": "\"",
+    "multiLine": true,
+    "mode": "FAILFAST",
+    "inferSchema": false
+  },
+  "source_schema": [
+    {
+      "column_name": "evt_code",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_desc",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_type",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_date",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_mrc",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_printed",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_obtype",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_object",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_standwork",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_ppm",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_freq",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_isstype",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_class",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_route",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_target",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_duration",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_parent",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_reqm",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_jobtype",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_priority",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_reported",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_start",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_due",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_completed",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_warranty",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_safety",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_reopened",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_schedend",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_created",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_updated",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_updatecount",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_perioduom",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_sqlidentity",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_multiequip",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_completed_trunc",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar01",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar02",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar03",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar04",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar05",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar06",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar08",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar10",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar11",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar12",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar13",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar14",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar15",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchar16",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfnum01",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchkbox01",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchkbox02",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchkbox03",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchkbox04",
+      "data_type": "string",
+      "nullable": true
+    },
+    {
+      "column_name": "evt_udfchkbox05",
+      "data_type": "string",
+      "nullable": true
+    }
+  ],
+  "column_quality": [
+    {
+      "column_name": "evt_code",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_desc",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_type",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_date",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_mrc",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_printed",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_obtype",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_object",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_standwork",
+      "source_data_type": "string",
+      "missing_count": 917475,
+      "non_missing_count": 1314060,
+      "missing_percentage": 41.11
+    },
+    {
+      "column_name": "evt_ppm",
+      "source_data_type": "string",
+      "missing_count": 2130626,
+      "non_missing_count": 100909,
+      "missing_percentage": 95.48
+    },
+    {
+      "column_name": "evt_freq",
+      "source_data_type": "string",
+      "missing_count": 2127574,
+      "non_missing_count": 103961,
+      "missing_percentage": 95.34
+    },
+    {
+      "column_name": "evt_isstype",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_class",
+      "source_data_type": "string",
+      "missing_count": 696764,
+      "non_missing_count": 1534771,
+      "missing_percentage": 31.22
+    },
+    {
+      "column_name": "evt_route",
+      "source_data_type": "string",
+      "missing_count": 2121345,
+      "non_missing_count": 110190,
+      "missing_percentage": 95.06
+    },
+    {
+      "column_name": "evt_target",
+      "source_data_type": "string",
+      "missing_count": 1131933,
+      "non_missing_count": 1099602,
+      "missing_percentage": 50.72
+    },
+    {
+      "column_name": "evt_duration",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_parent",
+      "source_data_type": "string",
+      "missing_count": 2156101,
+      "non_missing_count": 75434,
+      "missing_percentage": 96.62
+    },
+    {
+      "column_name": "evt_reqm",
+      "source_data_type": "string",
+      "missing_count": 1396917,
+      "non_missing_count": 834618,
+      "missing_percentage": 62.6
+    },
+    {
+      "column_name": "evt_jobtype",
+      "source_data_type": "string",
+      "missing_count": 282330,
+      "non_missing_count": 1949205,
+      "missing_percentage": 12.65
+    },
+    {
+      "column_name": "evt_priority",
+      "source_data_type": "string",
+      "missing_count": 994238,
+      "non_missing_count": 1237297,
+      "missing_percentage": 44.55
+    },
+    {
+      "column_name": "evt_reported",
+      "source_data_type": "string",
+      "missing_count": 336353,
+      "non_missing_count": 1895182,
+      "missing_percentage": 15.07
+    },
+    {
+      "column_name": "evt_start",
+      "source_data_type": "string",
+      "missing_count": 1152227,
+      "non_missing_count": 1079308,
+      "missing_percentage": 51.63
+    },
+    {
+      "column_name": "evt_due",
+      "source_data_type": "string",
+      "missing_count": 2150630,
+      "non_missing_count": 80905,
+      "missing_percentage": 96.37
+    },
+    {
+      "column_name": "evt_completed",
+      "source_data_type": "string",
+      "missing_count": 25585,
+      "non_missing_count": 2205950,
+      "missing_percentage": 1.15
+    },
+    {
+      "column_name": "evt_warranty",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_safety",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_reopened",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_schedend",
+      "source_data_type": "string",
+      "missing_count": 1131063,
+      "non_missing_count": 1100472,
+      "missing_percentage": 50.69
+    },
+    {
+      "column_name": "evt_created",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_updated",
+      "source_data_type": "string",
+      "missing_count": 730472,
+      "non_missing_count": 1501063,
+      "missing_percentage": 32.73
+    },
+    {
+      "column_name": "evt_updatecount",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_perioduom",
+      "source_data_type": "string",
+      "missing_count": 2127574,
+      "non_missing_count": 103961,
+      "missing_percentage": 95.34
+    },
+    {
+      "column_name": "evt_sqlidentity",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_multiequip",
+      "source_data_type": "string",
+      "missing_count": 0,
+      "non_missing_count": 2231535,
+      "missing_percentage": 0.0
+    },
+    {
+      "column_name": "evt_completed_trunc",
+      "source_data_type": "string",
+      "missing_count": 25585,
+      "non_missing_count": 2205950,
+      "missing_percentage": 1.15
+    },
+    {
+      "column_name": "evt_udfchar01",
+      "source_data_type": "string",
+      "missing_count": 1532634,
+      "non_missing_count": 698901,
+      "missing_percentage": 68.68
+    },
+    {
+      "column_name": "evt_udfchar02",
+      "source_data_type": "string",
+      "missing_count": 2231453,
+      "non_missing_count": 82,
+      "missing_percentage": 100.0
+    },
+    {
+      "column_name": "evt_udfchar03",
+      "source_data_type": "string",
+      "missing_count": 779064,
+      "non_missing_count": 1452471,
+      "missing_percentage": 34.91
+    },
+    {
+      "column_name": "evt_udfchar04",
+      "source_data_type": "string",
+      "missing_count": 2231453,
+      "non_missing_count": 82,
+      "missing_percentage": 100.0
+    },
+    {
+      "column_name": "evt_udfchar05",
+      "source_data_type": "string",
+      "missing_count": 2114549,
+      "non_missing_count": 116986,
+      "missing_percentage": 94.76
+    },
+    {
+      "column_name": "evt_udfchar06",
+      "source_data_type": "string",
+      "missing_count": 918270,
+      "non_missing_count": 1313265,
+      "missing_percentage": 41.15
+    },
+    {
+      "column_name": "evt_udfchar08",
+      "source_data_type": "string",
+      "missing_count": 859189,
+      "non_missing_count": 1372346,
+      "missing_percentage": 38.5
+    },
+    {
+      "column_name": "evt_udfchar10",
+      "source_data_type": "string",
+      "missing_count": 1208297,
+      "non_missing_count": 1023238,
+      "missing_percentage": 54.15
+    },
+    {
+      "column_name": "evt_udfchar11",
+      "source_data_type": "string",
+      "missing_count": 2107448,
+      "non_missing_count": 124087,
+      "missing_percentage": 94.44
+    },
+    {
+      "column_name": "evt_udfchar12",
+      "source_data_type": "string",
+      "missing_count": 1075338,
+      "non_missing_count": 1156197,
+      "missing_percentage": 48.19
+    },
+    {
+      "column_name": "evt_udfchar13",
+      "source_data_type": "string",
+      "missing_count": 60378,
+      "non_missing_count": 2171157,
+      "missing_percentage": 2.71
+    },
+    {
+      "column_name": "evt_udfchar14",
+      "source_data_type": "string",
+      "missing_count": 2021217,
+      "non_missing_count": 210318,
+      "missing_percentage": 90.58
+    },
+    {
+      "column_name": "evt_udfchar15",
+      "source_data_type": "string",
+      "missing_count": 2208599,
+      "non_missing_count": 22936,
+      "missing_percentage": 98.97
+    },
+    {
+      "column_name": "evt_udfchar16",
+      "source_data_type": "string",
+      "missing_count": 2228191,
+      "non_missing_count": 3344,
+      "missing_percentage": 99.85
+    },
+    {
+      "column_name": "evt_udfnum01",
+      "source_data_type": "string",
+      "missing_count": 2184714,
+      "non_missing_count": 46821,
+      "missing_percentage": 97.9
+    },
+    {
+      "column_name": "evt_udfchkbox01",
+      "source_data_type": "string",
+      "missing_count": 2132,
+      "non_missing_count": 2229403,
+      "missing_percentage": 0.1
+    },
+    {
+      "column_name": "evt_udfchkbox02",
+      "source_data_type": "string",
+      "missing_count": 2156,
+      "non_missing_count": 2229379,
+      "missing_percentage": 0.1
+    },
+    {
+      "column_name": "evt_udfchkbox03",
+      "source_data_type": "string",
+      "missing_count": 2156,
+      "non_missing_count": 2229379,
+      "missing_percentage": 0.1
+    },
+    {
+      "column_name": "evt_udfchkbox04",
+      "source_data_type": "string",
+      "missing_count": 2156,
+      "non_missing_count": 2229379,
+      "missing_percentage": 0.1
+    },
+    {
+      "column_name": "evt_udfchkbox05",
+      "source_data_type": "string",
+      "missing_count": 5600,
+      "non_missing_count": 2225935,
+      "missing_percentage": 0.25
+    }
+  ],
+  "candidate_identifier_validation": {
+    "evt_code": {
+      "column_name": "evt_code",
+      "total_records": 2231535,
+      "missing_records": 0,
+      "distinct_identifiers": 2231535,
+      "duplicate_excess_rows": 0,
+      "is_complete": true,
+      "is_unique": true,
+      "is_candidate_record_key": true
+    },
+    "evt_sqlidentity": {
+      "column_name": "evt_sqlidentity",
+      "total_records": 2231535,
+      "missing_records": 0,
+      "distinct_identifiers": 2231535,
+      "duplicate_excess_rows": 0,
+      "is_complete": true,
+      "is_unique": true,
+      "is_candidate_record_key": true
+    }
+  },
+  "asset_reference_columns": [
+    "evt_object",
+    "evt_obtype",
+    "evt_parent"
+  ],
+  "sample_columns": [
+    "evt_code",
+    "evt_desc",
+    "evt_type",
+    "evt_object",
+    "evt_priority",
+    "evt_sqlidentity"
+  ],
+  "notes": [
+    "All 447 CSV headers were validated.",
+    "Doubled CSV quotes are handled explicitly.",
+    "Multiline quoted text is supported.",
+    "Standalone exports and test CSVs excluded.",
+    "All original columns remain strings.",
+    "No source records were modified.",
+    "Cross-dataset relationships are pending."
+  ]
+}

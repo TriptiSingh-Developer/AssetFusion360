@@ -1,0 +1,19 @@
+{
+  "project": "AssetFusion360",
+  "layer": "Gold Analytics",
+  "table": "gold_transaction_monthly_kpis",
+  "status": "COMPLETED",
+  "source": "data/04_gold_analytics/fact_transactions",
+  "output": "data/04_gold_analytics/gold_transaction_monthly_kpis/part-00000.parquet",
+  "rows": 1689,
+  "columns": 7,
+  "parquet_files": 1,
+  "source_transaction_rows": 755122,
+  "reporting_months": 210,
+  "first_month": "2009-05",
+  "last_month": "2026-10",
+  "missing_date_rows": 0,
+  "invalid_date_flag_rows": 0,
+  "silver_dq_issue_rows": 0,
+  "created_utc": "2026-11-15T06:05:05.420288+00:00"
+}
