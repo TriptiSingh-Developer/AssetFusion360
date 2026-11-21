@@ -1,53 +1,100 @@
+# AssetFusion360
 
-# AssetFusion 360
+[![Powered by Kedro](https://img.shields.io/badge/powered_by-kedro-ffc900?logo=kedro)](https://kedro.org)
 
-## Enterprise Asset Management, Predictive Maintenance & Operational Analytics Using Azure Databricks and Microsoft Fabric
+## Overview
 
-### Project Overview
+This is your new Kedro project with PySpark setup, which was generated using `kedro 1.8.0`.
 
-AssetFusion 360 is an end-to-end Enterprise Asset Management (EAM) analytics platform designed to support public infrastructure asset monitoring, maintenance operations, predictive maintenance, and operational decision-making.
+Take a look at the [Kedro documentation](https://docs.kedro.org) to get started.
 
-The project integrates asset records, work orders, inspections, service requests, and maintenance history into a cloud-based analytics architecture.
+## Rules and guidelines
 
-## Original Rutgers Capstone Requirements
+In order to get the best out of the template:
 
-1. Python, SQL, PySpark, and Azure Databricks for data ingestion, cleaning, transformation, and modeling.
-2. Bronze, Silver, and Gold pipelines using Delta Lake.
-3. Microsoft Fabric Lakehouse and Warehouse.
-4. Dimensional enterprise asset-management data model.
-5. AssetGuard predictive maintenance using Logistic Regression, XGBoost, and LightGBM.
-6. SHAP explanations for asset-risk predictions.
-7. Azure SQL database containing assets, work orders, maintenance cases, and model predictions.
-8. Optional similar-work-order search.
-9. Microsoft Fabric semantic models.
-10. Power BI dashboards covering asset health, work-order management, maintenance performance, maintenance costs, operational KPIs, and data quality.
-11. MLflow experiments and model comparison.
-12. GitHub code repository, project documentation, methodology and findings report, final report, and presentation.
+* Don't remove any lines from the `.gitignore` file we provide
+* Make sure your results can be reproduced by following a [data engineering convention](https://docs.kedro.org/en/stable/faq/faq.html#what-is-data-engineering-convention)
+* Don't commit data to your repository
+* Don't commit any credentials or your local configuration to your repository. Keep all your credentials and local configuration in `conf/local/`
 
-## Additional Project Capabilities
+## How to install dependencies
 
-- Azure Data Factory orchestration
-- Azure Data Lake Storage Gen2
-- Advanced data-quality validation
-- Maintenance-demand and cost forecasting
-- AssetOps AI Agent
-- Retrieval-Augmented Generation (RAG)
-- API integration and automated monitoring
+Declare any dependencies in `requirements.txt` for `pip` installation.
 
-These capabilities extend the original capstone without changing its business problem.
+To install them, run:
 
-## Planned Public Dataset Sources
+```
+pip install -r requirements.txt
+```
 
-- NYC Parks AMPS: Primary asset-management and work-order data.
-- NYC 311: Municipal service-request analytics.
-- UCI AI4I 2020: Separate predictive-maintenance research dataset.
+## How to run your Kedro pipeline
 
-Dataset relationships and source suitability will be validated before integration. Unrelated asset identifiers will not be artificially joined.
+You can run your Kedro project with:
 
-## Technology Stack
+```
+kedro run
+```
 
-Python | SQL | PySpark | Azure Databricks | Delta Lake | Azure Data Factory | ADLS Gen2 | Microsoft Fabric | Azure SQL | Power BI | scikit-learn | XGBoost | LightGBM | SHAP | MLflow | GitHub
+## How to test your Kedro project
 
-## Project Status
+Have a look at the files `tests/test_run.py` and `tests/pipelines/data_science/test_pipeline.py` for instructions on how to write your tests. Run the tests as follows:
 
-Environment setup in progress.
+```
+pytest
+```
+
+You can configure the coverage threshold in your project's `pyproject.toml` file under the `[tool.coverage.report]` section.
+
+## Project dependencies
+
+To see and update the dependency requirements for your project use `requirements.txt`. Install the project requirements with `pip install -r requirements.txt`.
+
+[Further information about project dependencies](https://docs.kedro.org/en/stable/kedro_project_setup/dependencies.html#project-specific-dependencies)
+
+## How to work with Kedro and notebooks
+
+> Note: Using `kedro jupyter` or `kedro ipython` to run your notebook provides these variables in scope: `catalog`, `context`, `pipelines` and `session`.
+>
+> Jupyter, JupyterLab, and IPython are already included in the project requirements by default, so once you have run `pip install -r requirements.txt` you will not need to take any extra steps before you use them.
+
+### Jupyter
+To use Jupyter notebooks in your Kedro project, you need to install Jupyter:
+
+```
+pip install jupyter
+```
+
+After installing Jupyter, you can start a local notebook server:
+
+```
+kedro jupyter notebook
+```
+
+### JupyterLab
+To use JupyterLab, you need to install it:
+
+```
+pip install jupyterlab
+```
+
+You can also start JupyterLab:
+
+```
+kedro jupyter lab
+```
+
+### IPython
+And if you want to run an IPython session:
+
+```
+kedro ipython
+```
+
+### How to ignore notebook output cells in `git`
+To automatically strip out all output cell contents before committing to `git`, you can use tools like [`nbstripout`](https://github.com/kynan/nbstripout). For example, you can add a hook in `.git/config` with `nbstripout --install`. This will run `nbstripout` before anything is committed to `git`.
+
+> *Note:* Your output cells will be retained locally.
+
+## Package your Kedro project
+
+[Further information about building project documentation and packaging your project](https://docs.kedro.org/en/stable/tutorial/package_a_project.html)

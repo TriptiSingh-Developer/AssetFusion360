@@ -1,0 +1,3478 @@
+﻿
+================================================================================
+SOURCE FILE: silver_assets_transformation.py
+================================================================================
+
+"""
+AssetFusion360 Capstone
+Step 6.2 - AMPS Assets Silver Transformation
+
+Architecture:
+    Bronze Parquet -> PyArrow streaming transformation
+    -> Validated Silver Parquet -> Kedro manifest
+
+Rules:
+    - Never modify Bronze files.
+    - Never overwrite existing Silver files.
+    - Preserve all 148,522 asset records.
+    - Preserve all 32 original Bronze fields.
+    - Add typed fields and data-quality indicators.
+    - Retain nulls and malformed source values.
+    - Do not deduplicate, filter, or impute.
+    - Validate record counts and schemas.
+"""
+
+import hashlib
+import json
+import re
+
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+# ============================================================
+# 1. CONFIGURATION
+# ============================================================
+
+ROOT = Path(__file__).resolve().parents[3]
+
+BRONZE_FILE = (
+    ROOT
+    / "data"
+    / "02_bronze_ingested_data"
+    / "amps_assets"
+    / "part-00000.parquet"
+)
+
+SILVER_ROOT = (
+    ROOT / "data" / "03_silver_cleaned_data"
+)
+
+SILVER_DIR = SILVER_ROOT / "amps_assets"
+
+STAGING_DIR = (
+    SILVER_ROOT / "_staging_amps_assets"
+)
+
+SILVER_FILE = (
+    SILVER_DIR / "part-00000.parquet"
+)
+
+MANIFEST_FILE = (
+    ROOT
+    / "reports"
+    / "data_profiling_reports"
+    / "amps_assets_silver_transformation_manifest.json"
+)
+
+EXPECTED_ROWS = 148_522
+EXPECTED_BRONZE_COLUMNS = 32
+
+BATCH_SIZE = 5000
+
+REQUIRED_COLUMNS = [
+    "OBJ_CODE",
+    "OBJ_SQLIDENTITY",
+    "OBJ_COMMISS",
+    "OBJ_CREATED",
+    "OBJ_VALUE",
+]
+
+NEW_FIELDS = [
+    pa.field(
+        "asset_identity_int",
+        pa.int64()
+    ),
+    pa.field(
+        "asset_commissioned_ts",
+        pa.timestamp("us")
+    ),
+    pa.field(
+        "asset_created_ts",
+        pa.timestamp("us")
+    ),
+    pa.field(
+        "asset_value_decimal",
+        pa.decimal128(20, 6)
+    ),
+    pa.field(
+        "dq_asset_code_missing",
+        pa.bool_()
+    ),
+    pa.field(
+        "dq_asset_code_placeholder",
+        pa.bool_()
+    ),
+    pa.field(
+        "dq_asset_identity_invalid",
+        pa.bool_()
+    ),
+    pa.field(
+        "dq_commission_date_invalid",
+        pa.bool_()
+    ),
+    pa.field(
+        "dq_created_date_invalid",
+        pa.bool_()
+    ),
+    pa.field(
+        "dq_asset_value_invalid",
+        pa.bool_()
+    ),
+    pa.field(
+        "dq_any_issue",
+        pa.bool_()
+    ),
+]
+
+
+# ============================================================
+# 2. GENERAL UTILITIES
+# ============================================================
+
+def utc_now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def relative(path):
+    return path.relative_to(ROOT).as_posix()
+
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+
+    with path.open("rb") as handle:
+        for chunk in iter(
+            lambda: handle.read(1024 * 1024),
+            b"",
+        ):
+            digest.update(chunk)
+
+    return digest.hexdigest()
+
+
+def is_missing(value):
+    return (
+        value is None
+        or str(value).strip() == ""
+    )
+
+
+def parse_integer(value):
+    if is_missing(value):
+        return None, False
+
+    text = str(value).strip()
+
+    if not re.fullmatch(r"[+-]?\d+", text):
+        return None, True
+
+    try:
+        result = int(text)
+    except ValueError:
+        return None, True
+
+    if not -(2**63) <= result < 2**63:
+        return None, True
+
+    return result, False
+
+
+def parse_decimal(value):
+    if is_missing(value):
+        return None, False
+
+    try:
+        result = Decimal(str(value).strip())
+
+        if not result.is_finite():
+            return None, True
+
+        result = result.quantize(
+            Decimal("0.000001")
+        )
+
+        # Decimal(20,6) allows at most
+        # 14 digits before the decimal point.
+        if abs(result) >= Decimal("100000000000000"):
+            return None, True
+
+        return result, False
+
+    except (InvalidOperation, ValueError, OverflowError):
+        return None, True
+
+
+# ============================================================
+# 3. DATE PARSING
+# ============================================================
+
+def parse_timestamp(value):
+    if is_missing(value):
+        return None, False
+
+    text = str(value).strip()
+
+    # Source dates include repeated spaces,
+    # such as "Feb 20 2009  9:36AM".
+
+    text = re.sub(r"\s+", " ", text)
+
+    formats = [
+        "%b %d %Y %I:%M%p",
+        "%b %d %Y %I:%M:%S%p",
+        "%b %d %Y %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+    ]
+
+    for date_format in formats:
+        try:
+            parsed = datetime.strptime(
+                text,
+                date_format
+            )
+
+            return parsed, False
+
+        except ValueError:
+            continue
+
+    return None, True
+
+
+# ============================================================
+# 4. PROTECT EXISTING FILES
+# ============================================================
+
+def check_safety():
+    if not BRONZE_FILE.is_file():
+        raise FileNotFoundError(
+            f"Bronze file missing: {BRONZE_FILE}"
+        )
+
+    for path in [
+        SILVER_DIR,
+        STAGING_DIR,
+        MANIFEST_FILE,
+    ]:
+        if path.exists():
+            raise FileExistsError(
+                "Existing Silver artifact detected. "
+                f"Will not overwrite: {path}"
+            )
+
+    print("Silver output safety: PASS")
+    print("Bronze source protection: PASS")
+
+
+# ============================================================
+# 5. READ AND VALIDATE BRONZE
+# ============================================================
+
+def inspect_bronze():
+    bronze = pq.ParquetFile(
+        str(BRONZE_FILE)
+    )
+
+    schema = bronze.schema_arrow
+
+    if bronze.metadata.num_rows != EXPECTED_ROWS:
+        raise ValueError(
+            "Bronze record count mismatch."
+        )
+
+    if len(schema) != EXPECTED_BRONZE_COLUMNS:
+        raise ValueError(
+            "Bronze column count mismatch."
+        )
+
+    for column in REQUIRED_COLUMNS:
+        if column not in schema.names:
+            raise ValueError(
+                f"Missing required Bronze column: {column}"
+            )
+
+    for field in NEW_FIELDS:
+        if field.name in schema.names:
+            raise ValueError(
+                f"Silver field already exists: {field.name}"
+            )
+
+    if any(
+        not field.type.equals(pa.string())
+        for field in schema
+    ):
+        raise ValueError(
+            "Unexpected Bronze field type."
+        )
+
+    print("Bronze records:", bronze.metadata.num_rows)
+    print("Bronze columns:", len(schema))
+    print("Bronze schema: PASS")
+
+    return bronze, schema
+
+
+# ============================================================
+# 6. TRANSFORM ONE RECORD
+# ============================================================
+
+def transform_record(record):
+    result = dict(record)
+
+    asset_code = record.get("OBJ_CODE")
+
+    identity, identity_invalid = parse_integer(
+        record.get("OBJ_SQLIDENTITY")
+    )
+
+    commissioned, commissioned_invalid = (
+        parse_timestamp(
+            record.get("OBJ_COMMISS")
+        )
+    )
+
+    created, created_invalid = parse_timestamp(
+        record.get("OBJ_CREATED")
+    )
+
+    value, value_invalid = parse_decimal(
+        record.get("OBJ_VALUE")
+    )
+
+    code_missing = is_missing(asset_code)
+
+    code_placeholder = (
+        not code_missing
+        and str(asset_code).strip().upper()
+        in {"*", "N/A", "NA", "NULL", "UNKNOWN"}
+    )
+
+    # An absent identifier is an issue,
+    # distinct from a parsing failure.
+    identity_missing = is_missing(
+        record.get("OBJ_SQLIDENTITY")
+    )
+
+    any_issue = any([
+        code_missing,
+        code_placeholder,
+        identity_invalid,
+        identity_missing,
+        commissioned_invalid,
+        created_invalid,
+        value_invalid,
+    ])
+
+    result.update({
+        "asset_identity_int": identity,
+        "asset_commissioned_ts": commissioned,
+        "asset_created_ts": created,
+        "asset_value_decimal": value,
+        "dq_asset_code_missing": code_missing,
+        "dq_asset_code_placeholder": code_placeholder,
+        "dq_asset_identity_invalid": (
+            identity_invalid or identity_missing
+        ),
+        "dq_commission_date_invalid": (
+            commissioned_invalid
+        ),
+        "dq_created_date_invalid": created_invalid,
+        "dq_asset_value_invalid": value_invalid,
+        "dq_any_issue": any_issue,
+    })
+
+    return result
+
+
+# ============================================================
+# 7. STREAMING SILVER TRANSFORMATION
+# ============================================================
+
+def transform_assets():
+    print("\n" + "=" * 70)
+    print("ASSETFUSION360 - STEP 6.2")
+    print("AMPS ASSETS SILVER TRANSFORMATION")
+    print("=" * 70)
+
+    check_safety()
+
+    bronze, bronze_schema = inspect_bronze()
+
+    bronze_hash_before = sha256_file(
+        BRONZE_FILE
+    )
+
+    silver_schema = pa.schema(
+        list(bronze_schema) + NEW_FIELDS
+    )
+
+    STAGING_DIR.mkdir(
+        parents=True,
+        exist_ok=False
+    )
+
+    staging_file = (
+        STAGING_DIR / "part-00000.parquet"
+    )
+
+    quality_counts = {
+        field.name: 0
+        for field in NEW_FIELDS
+        if field.name.startswith("dq_")
+    }
+
+    rows_written = 0
+
+    with pq.ParquetWriter(
+        str(staging_file),
+        silver_schema,
+        compression="snappy",
+        version="2.6",
+    ) as writer:
+
+        for batch in bronze.iter_batches(
+            batch_size=BATCH_SIZE
+        ):
+            input_table = pa.Table.from_batches(
+                [batch]
+            )
+
+            source_rows = input_table.to_pylist()
+
+            transformed_rows = [
+                transform_record(record)
+                for record in source_rows
+            ]
+
+            for record in transformed_rows:
+                for flag in quality_counts:
+                    if record[flag]:
+                        quality_counts[flag] += 1
+
+            silver_table = pa.Table.from_pylist(
+                transformed_rows,
+                schema=silver_schema,
+            )
+
+            writer.write_table(silver_table)
+
+            rows_written += silver_table.num_rows
+
+            print(
+                f"Processed: {rows_written:,} "
+                f"of {EXPECTED_ROWS:,} assets",
+                flush=True,
+            )
+
+    # ========================================================
+    # 8. VALIDATE STAGED SILVER PARQUET
+    # ========================================================
+
+    print("\nVALIDATING SILVER DATASET")
+    print("-" * 65)
+
+    silver_metadata = pq.read_metadata(
+        staging_file
+    )
+
+    silver_actual_schema = pq.read_schema(
+        staging_file
+    )
+
+    if rows_written != EXPECTED_ROWS:
+        raise ValueError(
+            "Silver row reconciliation failed."
+        )
+
+    if silver_metadata.num_rows != EXPECTED_ROWS:
+        raise ValueError(
+            "Silver Parquet row count mismatch."
+        )
+
+    if not silver_actual_schema.equals(
+        silver_schema,
+        check_metadata=False,
+    ):
+        raise ValueError(
+            "Silver Parquet schema mismatch."
+        )
+
+    # Verify the Bronze input remains unchanged.
+    bronze_hash_after = sha256_file(
+        BRONZE_FILE
+    )
+
+    if bronze_hash_after != bronze_hash_before:
+        raise RuntimeError(
+            "Bronze source checksum changed."
+        )
+
+    # Validate row-count preservation and original
+    # Bronze field values against the staged Silver.
+    # Check batches in the same physical row order.
+
+    bronze_verify = pq.ParquetFile(
+        str(BRONZE_FILE)
+    )
+
+    silver_verify = pq.ParquetFile(
+        str(staging_file)
+    )
+
+    source_columns = bronze_schema.names
+
+    silver_original_batches = (
+        silver_verify.iter_batches(
+            batch_size=BATCH_SIZE,
+            columns=source_columns,
+        )
+    )
+
+    verified_original_rows = 0
+
+    for bronze_batch, silver_batch in zip(
+        bronze_verify.iter_batches(
+            batch_size=BATCH_SIZE,
+            columns=source_columns,
+        ),
+        silver_original_batches,
+        strict=True,
+    ):
+        if not bronze_batch.equals(
+            silver_batch,
+            check_metadata=False,
+        ):
+            raise ValueError(
+                "Original Bronze values were modified "
+                "during Silver transformation."
+            )
+
+        verified_original_rows += (
+            bronze_batch.num_rows
+        )
+
+    if verified_original_rows != EXPECTED_ROWS:
+        raise ValueError(
+            "Original-field verification count mismatch."
+        )
+
+    print("Silver records:", f"{rows_written:,}")
+    print("Silver columns:", len(silver_schema))
+    print("Bronze original fields preserved: PASS")
+    print("Bronze SHA-256 unchanged: PASS")
+    print("Silver row reconciliation: PASS")
+    print("Silver schema validation: PASS")
+
+    # ========================================================
+    # 9. PUBLISH FINAL SILVER DATA
+    # ========================================================
+
+    if SILVER_DIR.exists():
+        raise FileExistsError(
+            "Silver output appeared during processing."
+        )
+
+    STAGING_DIR.rename(SILVER_DIR)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "phase": "Silver",
+        "step": "6.2",
+        "dataset": "AMPS Assets",
+        "status": "COMPLETED",
+        "engine": "PyArrow",
+        "orchestration": "Kedro SequentialRunner",
+        "bronze_source": relative(BRONZE_FILE),
+        "silver_output": relative(SILVER_FILE),
+        "bronze_sha256": bronze_hash_before,
+        "bronze_rows": EXPECTED_ROWS,
+        "silver_rows": rows_written,
+        "bronze_columns": len(bronze_schema),
+        "silver_columns": len(silver_schema),
+        "original_source_fields_preserved": True,
+        "row_count_preserved": True,
+        "quality_flag_counts": quality_counts,
+        "silver_parquet_row_groups": (
+            silver_metadata.num_row_groups
+        ),
+        "silver_parquet_size_bytes": (
+            SILVER_FILE.stat().st_size
+        ),
+        "transformation_rules": [
+            "Preserve all original Bronze fields.",
+            "Parse selected date values into timestamps.",
+            "Parse asset identity into nullable int64.",
+            "Parse asset value into nullable decimal(20,6).",
+            "Preserve missing values.",
+            "Flag malformed nonempty dates and values.",
+            "Flag missing and placeholder asset codes.",
+            "Never filter or deduplicate source records.",
+        ],
+        "created_utc": utc_now(),
+    }
+
+    MANIFEST_FILE.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    with MANIFEST_FILE.open(
+        "x",
+        encoding="utf-8"
+    ) as handle:
+        json.dump(
+            manifest,
+            handle,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    print("\n" + "=" * 70)
+    print("AMPS ASSETS SILVER SUMMARY")
+    print("=" * 70)
+    print("Bronze rows:", f"{EXPECTED_ROWS:,}")
+    print("Silver rows:", f"{rows_written:,}")
+    print("Original columns:", len(bronze_schema))
+    print("Silver columns:", len(silver_schema))
+
+    print("\nQUALITY FLAG COUNTS")
+    for flag, count in quality_counts.items():
+        print(f"{flag}: {count:,}")
+
+    print("\nSilver output:", SILVER_FILE)
+    print("Manifest:", MANIFEST_FILE)
+    print("\nASSETS SILVER TRANSFORMATION: SUCCESS")
+
+    return manifest
+
+
+# ============================================================
+# 10. KEDRO PIPELINE
+# ============================================================
+
+def create_silver_assets_pipeline():
+    return pipeline([
+        node(
+            func=transform_assets,
+            inputs=None,
+            outputs="amps_assets_silver_manifest",
+            name="transform_amps_assets_silver",
+            tags=["silver", "amps", "assets"],
+        )
+    ])
+
+
+# ============================================================
+# 11. KEDRO RUNNER
+# ============================================================
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "amps_assets_silver_manifest": (
+            MemoryDataset()
+        )
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_silver_assets_pipeline(),
+        catalog,
+    )
+
+    manifest = catalog.load(
+        "amps_assets_silver_manifest"
+    )
+
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("status") != "COMPLETED"
+    ):
+        raise RuntimeError(
+            "Kedro Silver Assets manifest validation failed."
+        )
+
+    print("\nKEDRO SILVER ASSETS PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: silver_labor_transformation.py
+================================================================================
+
+"""
+AssetFusion360 Capstone
+Step 6.4B - AMPS Labor Silver Transformation
+
+- Preserve every Bronze record and original column.
+- Parse labor dates and selected numeric values.
+- Preserve negative hours, rates, and costs.
+- Add parsing and informational quality flags.
+- Validate every Silver Parquet file against Bronze.
+- Never overwrite existing outputs.
+- Publish only after complete validation.
+"""
+
+import gc
+import json
+import re
+
+from collections import Counter
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from functools import lru_cache
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+# ============================================================
+# 1. PROJECT CONFIGURATION
+# ============================================================
+
+ROOT = Path(__file__).resolve().parents[3]
+
+BRONZE_DIR = (
+    ROOT / "data" / "02_bronze_ingested_data"
+    / "amps_labor"
+)
+
+SILVER_ROOT = (
+    ROOT / "data" / "03_silver_cleaned_data"
+)
+
+SILVER_DIR = SILVER_ROOT / "amps_labor"
+
+STAGING_DIR = (
+    SILVER_ROOT / "_staging_amps_labor"
+)
+
+MANIFEST_FILE = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "amps_labor_silver_transformation_manifest.json"
+)
+
+EXPECTED_FILES = 647
+EXPECTED_ROWS = 3_230_423
+EXPECTED_BRONZE_COLUMNS = 22
+
+BATCH_SIZE = 5000
+
+
+# ============================================================
+# 2. SILVER SCHEMA
+# ============================================================
+
+TYPED_FIELDS = [
+    pa.field("labor_identity_int", pa.int64()),
+    pa.field("labor_workorder_id_int", pa.int64()),
+    pa.field("labor_date_ts", pa.timestamp("us")),
+    pa.field("labor_hours_decimal", pa.decimal128(20, 6)),
+    pa.field("labor_rate_decimal", pa.decimal128(20, 6)),
+    pa.field("labor_cost_decimal", pa.decimal128(20, 6)),
+]
+
+QUALITY_FLAGS = [
+    "dq_labor_identity_invalid",
+    "dq_workorder_reference_invalid",
+    "dq_labor_date_invalid",
+    "dq_labor_hours_invalid",
+    "dq_labor_rate_invalid",
+    "dq_labor_cost_invalid",
+    "dq_negative_labor_hours",
+    "dq_negative_labor_cost",
+    "dq_zero_labor_rate",
+    "dq_any_issue",
+]
+
+QUALITY_FIELDS = [
+    pa.field(name, pa.bool_())
+    for name in QUALITY_FLAGS
+]
+
+ADDED_FIELDS = TYPED_FIELDS + QUALITY_FIELDS
+
+EXPECTED_SILVER_COLUMNS = (
+    EXPECTED_BRONZE_COLUMNS + len(ADDED_FIELDS)
+)
+
+assert EXPECTED_SILVER_COLUMNS == 38
+
+
+# ============================================================
+# 3. VALUE PARSING
+# ============================================================
+
+def missing(value):
+    return (
+        value is None
+        or str(value).strip() == ""
+    )
+
+
+def parse_integer(value):
+    if missing(value):
+        return None, False
+
+    text = str(value).strip()
+
+    if not re.fullmatch(r"[+-]?\d+", text):
+        return None, True
+
+    try:
+        number = int(text)
+    except ValueError:
+        return None, True
+
+    if not -(2**63) <= number < 2**63:
+        return None, True
+
+    return number, False
+
+
+def parse_decimal(value):
+    if missing(value):
+        return None, False
+
+    try:
+        number = Decimal(str(value).strip())
+
+        if not number.is_finite():
+            return None, True
+
+        number = number.quantize(
+            Decimal("0.000001")
+        )
+
+        # Decimal(20,6) has 14 integer digits.
+        if abs(number) >= Decimal("100000000000000"):
+            return None, True
+
+        return number, False
+
+    except (InvalidOperation, ValueError, OverflowError):
+        return None, True
+
+
+@lru_cache(maxsize=100000)
+def parse_date_cached(text):
+    normalized = re.sub(
+        r"\s+",
+        " ",
+        text.strip()
+    )
+
+    formats = [
+        "%b %d %Y %I:%M%p",
+        "%b %d %Y %I:%M:%S%p",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(
+                normalized,
+                fmt
+            )
+        except ValueError:
+            continue
+
+    return None
+
+
+def parse_date(value):
+    if missing(value):
+        return None, False
+
+    parsed = parse_date_cached(
+        str(value)
+    )
+
+    return parsed, parsed is None
+
+
+# ============================================================
+# 4. TRANSFORM ONE RECORD
+# ============================================================
+
+def transform_row(source):
+    result = dict(source)
+
+    identity, identity_invalid = parse_integer(
+        source.get("boo_sqlidentity")
+    )
+
+    event, event_invalid = parse_integer(
+        source.get("boo_event")
+    )
+
+    labor_date, date_invalid = parse_date(
+        source.get("boo_date")
+    )
+
+    hours, hours_invalid = parse_decimal(
+        source.get("boo_hours")
+    )
+
+    rate, rate_invalid = parse_decimal(
+        source.get("boo_rate")
+    )
+
+    cost, cost_invalid = parse_decimal(
+        source.get("boo_cost")
+    )
+
+    result.update({
+        "labor_identity_int": identity,
+        "labor_workorder_id_int": event,
+        "labor_date_ts": labor_date,
+        "labor_hours_decimal": hours,
+        "labor_rate_decimal": rate,
+        "labor_cost_decimal": cost,
+    })
+
+    flags = {
+        "dq_labor_identity_invalid": (
+            identity_invalid
+            or missing(source.get("boo_sqlidentity"))
+        ),
+        "dq_workorder_reference_invalid": (
+            event_invalid
+            or missing(source.get("boo_event"))
+        ),
+        "dq_labor_date_invalid": date_invalid,
+        "dq_labor_hours_invalid": hours_invalid,
+        "dq_labor_rate_invalid": rate_invalid,
+        "dq_labor_cost_invalid": cost_invalid,
+        "dq_negative_labor_hours": (
+            hours is not None and hours < 0
+        ),
+        "dq_negative_labor_cost": (
+            cost is not None and cost < 0
+        ),
+        "dq_zero_labor_rate": (
+            rate is not None and rate == 0
+        ),
+    }
+
+    # Distinguish data errors from valid financial
+    # reversals and zero-rate transactions.
+    error_flags = [
+        "dq_labor_identity_invalid",
+        "dq_workorder_reference_invalid",
+        "dq_labor_date_invalid",
+        "dq_labor_hours_invalid",
+        "dq_labor_rate_invalid",
+        "dq_labor_cost_invalid",
+    ]
+
+    flags["dq_any_issue"] = any(
+        flags[name] for name in error_flags
+    )
+
+    result.update(flags)
+
+    return result
+
+
+# ============================================================
+# 5. OUTPUT SAFETY
+# ============================================================
+
+def check_outputs():
+    if not BRONZE_DIR.is_dir():
+        raise FileNotFoundError(
+            f"Bronze directory missing: {BRONZE_DIR}"
+        )
+
+    for path in [
+        SILVER_DIR,
+        STAGING_DIR,
+        MANIFEST_FILE,
+    ]:
+        if path.exists():
+            raise FileExistsError(
+                "Existing output must be preserved: "
+                f"{path}"
+            )
+
+
+# ============================================================
+# 6. INSPECT BRONZE
+# ============================================================
+
+def inspect_sources():
+    files = sorted(
+        BRONZE_DIR.glob("*.parquet")
+    )
+
+    if len(files) != EXPECTED_FILES:
+        raise ValueError(
+            f"Expected {EXPECTED_FILES} files, "
+            f"found {len(files)}"
+        )
+
+    schema = pq.read_schema(files[0])
+
+    if len(schema) != EXPECTED_BRONZE_COLUMNS:
+        raise ValueError(
+            "Unexpected Bronze column count"
+        )
+
+    required_columns = [
+        "boo_event",
+        "boo_sqlidentity",
+        "boo_date",
+        "boo_hours",
+        "boo_rate",
+        "boo_cost",
+    ]
+
+    for field in required_columns:
+        if field not in schema.names:
+            raise ValueError(
+                f"Missing Bronze field: {field}"
+            )
+
+    for field in schema:
+        if not field.type.equals(pa.string()):
+            raise ValueError(
+                f"Unexpected field type: {field.name}"
+            )
+
+    for new_field in ADDED_FIELDS:
+        if new_field.name in schema.names:
+            raise ValueError(
+                f"Silver field collision: {new_field.name}"
+            )
+
+    total_rows = 0
+
+    for file in files:
+        metadata = pq.read_metadata(file)
+        actual_schema = pq.read_schema(file)
+
+        if not actual_schema.equals(
+            schema,
+            check_metadata=False,
+        ):
+            raise ValueError(
+                f"Bronze schema mismatch: {file.name}"
+            )
+
+        total_rows += metadata.num_rows
+
+    if total_rows != EXPECTED_ROWS:
+        raise ValueError(
+            f"Bronze rows mismatch: {total_rows}"
+        )
+
+    print("Bronze files:", len(files))
+    print("Bronze records:", f"{total_rows:,}")
+    print("Bronze columns:", len(schema))
+    print("Bronze validation: PASS")
+
+    return files, schema
+
+
+# ============================================================
+# 7. MAIN SILVER TRANSFORMATION
+# ============================================================
+
+def transform_labor():
+    print("=" * 70)
+    print("STEP 6.4B - AMPS LABOR SILVER")
+    print("=" * 70)
+
+    check_outputs()
+
+    files, bronze_schema = inspect_sources()
+
+    silver_schema = pa.schema(
+        list(bronze_schema) + ADDED_FIELDS
+    )
+
+    quality_counts = Counter({
+        flag: 0
+        for flag in QUALITY_FLAGS
+    })
+
+    total_written = 0
+    total_verified = 0
+
+    STAGING_DIR.mkdir(
+        parents=True,
+        exist_ok=False,
+    )
+
+    # One input Parquet produces one output Parquet.
+    for index, source_path in enumerate(files, 1):
+
+        staging_file = (
+            STAGING_DIR / source_path.name
+        )
+
+        written = 0
+
+        # Close reader and writer before validation.
+        with pq.ParquetFile(str(source_path)) as reader:
+            expected_file_rows = reader.metadata.num_rows
+
+            with pq.ParquetWriter(
+                str(staging_file),
+                silver_schema,
+                compression="snappy",
+                version="2.6",
+            ) as writer:
+
+                for batch in reader.iter_batches(
+                    batch_size=BATCH_SIZE
+                ):
+                    input_table = (
+                        pa.Table.from_batches([batch])
+                    )
+
+                    source_records = (
+                        input_table.to_pylist()
+                    )
+
+                    converted_records = [
+                        transform_row(record)
+                        for record in source_records
+                    ]
+
+                    for record in converted_records:
+                        for flag in QUALITY_FLAGS:
+                            if record[flag]:
+                                quality_counts[flag] += 1
+
+                    silver_table = (
+                        pa.Table.from_pylist(
+                            converted_records,
+                            schema=silver_schema,
+                        )
+                    )
+
+                    writer.write_table(
+                        silver_table
+                    )
+
+                    written += silver_table.num_rows
+
+        if written != expected_file_rows:
+            raise ValueError(
+                f"Silver row mismatch: {source_path.name}"
+            )
+
+        # Validate the actual published-format file,
+        # including original Bronze field equality.
+
+        file_verified = 0
+
+        with pq.ParquetFile(
+            str(source_path)
+        ) as source_check:
+
+            with pq.ParquetFile(
+                str(staging_file)
+            ) as silver_check:
+
+                if silver_check.metadata.num_rows != written:
+                    raise ValueError(
+                        f"Parquet row mismatch: {source_path.name}"
+                    )
+
+                if not silver_check.schema_arrow.equals(
+                    silver_schema,
+                    check_metadata=False,
+                ):
+                    raise ValueError(
+                        f"Schema mismatch: {source_path.name}"
+                    )
+
+                original_batches = (
+                    source_check.iter_batches(
+                        batch_size=BATCH_SIZE,
+                        columns=bronze_schema.names,
+                    )
+                )
+
+                preserved_batches = (
+                    silver_check.iter_batches(
+                        batch_size=BATCH_SIZE,
+                        columns=bronze_schema.names,
+                    )
+                )
+
+                for original, preserved in zip(
+                    original_batches,
+                    preserved_batches,
+                    strict=True,
+                ):
+                    if not original.equals(
+                        preserved,
+                        check_metadata=False,
+                    ):
+                        raise ValueError(
+                            "Bronze values changed in "
+                            f"{source_path.name}"
+                        )
+
+                    file_verified += original.num_rows
+
+        if file_verified != written:
+            raise ValueError(
+                f"Original-value validation failed: "
+                f"{source_path.name}"
+            )
+
+        total_written += written
+        total_verified += file_verified
+
+        print(
+            f"[{index}/{EXPECTED_FILES}] "
+            f"{source_path.name}: {written:,} rows "
+            f"| total {total_written:,}",
+            flush=True,
+        )
+
+    # ========================================================
+    # 8. GLOBAL RECONCILIATION
+    # ========================================================
+
+    if total_written != EXPECTED_ROWS:
+        raise ValueError(
+            "Global Silver record reconciliation failed"
+        )
+
+    if total_verified != EXPECTED_ROWS:
+        raise ValueError(
+            "Original Bronze value reconciliation failed"
+        )
+
+    staged_files = sorted(
+        STAGING_DIR.glob("*.parquet")
+    )
+
+    if len(staged_files) != EXPECTED_FILES:
+        raise ValueError(
+            "Silver Parquet inventory mismatch"
+        )
+
+    print("\nFINAL SILVER STAGING VALIDATION")
+    print("-" * 60)
+
+    print("Silver files:", len(staged_files))
+    print("Silver records:", f"{total_written:,}")
+    print("Silver columns:", len(silver_schema))
+    print("Original Bronze values preserved: PASS")
+
+    # ========================================================
+    # 9. WINDOWS-SAFE PUBLICATION
+    # ========================================================
+
+    # Release references before renaming.
+    # Do not remove staging if publication fails.
+    del staged_files
+    gc.collect()
+
+    if SILVER_DIR.exists():
+        raise FileExistsError(
+            "Final Silver directory appeared during execution"
+        )
+
+    STAGING_DIR.rename(SILVER_DIR)
+
+    # ========================================================
+    # 10. WRITE MANIFEST
+    # ========================================================
+
+    manifest = {
+        "project": "AssetFusion360",
+        "phase": "Silver",
+        "step": "6.4",
+        "dataset": "AMPS Labor",
+        "status": "COMPLETED",
+        "engine": "PyArrow",
+        "orchestration": "Kedro SequentialRunner",
+        "bronze_source": (
+            BRONZE_DIR.relative_to(ROOT).as_posix()
+        ),
+        "silver_output": (
+            SILVER_DIR.relative_to(ROOT).as_posix()
+        ),
+        "bronze_rows": EXPECTED_ROWS,
+        "silver_rows": total_written,
+        "bronze_columns": len(bronze_schema),
+        "silver_columns": len(silver_schema),
+        "parquet_files": EXPECTED_FILES,
+        "original_source_fields_preserved": True,
+        "row_count_preserved": True,
+        "quality_flag_counts": dict(quality_counts),
+        "financial_value_policy": (
+            "Preserve negative hours/costs and "
+            "zero rates; flag for later investigation."
+        ),
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST_FILE.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST_FILE.open(
+        "x",
+        encoding="utf-8",
+    ) as handle:
+        json.dump(
+            manifest,
+            handle,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    print("\n" + "=" * 70)
+    print("AMPS LABOR SILVER SUMMARY")
+    print("=" * 70)
+
+    print("Bronze records:", f"{EXPECTED_ROWS:,}")
+    print("Silver records:", f"{total_written:,}")
+    print("Parquet files:", EXPECTED_FILES)
+    print("Bronze columns:", len(bronze_schema))
+    print("Silver columns:", len(silver_schema))
+
+    print("\nQUALITY FLAG COUNTS")
+
+    for flag in QUALITY_FLAGS:
+        print(
+            f"{flag}: {quality_counts[flag]:,}"
+        )
+
+    print("\nLABOR SILVER TRANSFORMATION: SUCCESS")
+
+    return manifest
+
+
+# ============================================================
+# 11. KEDRO
+# ============================================================
+
+def create_silver_labor_pipeline():
+    return pipeline([
+        node(
+            func=transform_labor,
+            inputs=None,
+            outputs="amps_labor_silver_manifest",
+            name="transform_amps_labor_silver",
+            tags=["silver", "amps", "labor"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "amps_labor_silver_manifest": MemoryDataset()
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_silver_labor_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load(
+        "amps_labor_silver_manifest"
+    )
+
+    if result.get("status") != "COMPLETED":
+        raise RuntimeError(
+            "Silver Labor manifest validation failed"
+        )
+
+    print("\nKEDRO LABOR SILVER PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: silver_transaction_details_transformation.py
+================================================================================
+
+"""
+AssetFusion360 Capstone
+Step 6.6B - AMPS Transaction Details Silver
+
+Preserves all 2,301,927 records and 35 original fields.
+
+Adds:
+    5 nullable integer fields
+    6 nullable timestamp fields
+    3 nullable decimal fields
+    19 quality flags
+
+Negative amounts and quantities are preserved.
+No files are overwritten or deleted.
+All original Bronze values are verified.
+"""
+
+import gc
+import json
+import re
+
+from collections import Counter
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from functools import lru_cache
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+# ============================================================
+# 1. CONFIGURATION
+# ============================================================
+
+ROOT = Path(__file__).resolve().parents[3]
+
+BRONZE_DIR = (
+    ROOT / "data" / "02_bronze_ingested_data"
+    / "amps_transaction_details"
+)
+
+SILVER_ROOT = (
+    ROOT / "data" / "03_silver_cleaned_data"
+)
+
+SILVER_DIR = (
+    SILVER_ROOT / "amps_transaction_details"
+)
+
+STAGING_DIR = (
+    SILVER_ROOT / "_staging_amps_transaction_details"
+)
+
+MANIFEST_FILE = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "amps_transaction_details_silver_transformation_manifest.json"
+)
+
+EXPECTED_FILES = 461
+EXPECTED_ROWS = 2_301_927
+EXPECTED_BRONZE_COLUMNS = 35
+BATCH_SIZE = 5000
+
+
+# ============================================================
+# 2. NEW SILVER COLUMNS
+# ============================================================
+
+INTEGER_FIELDS = {
+    "trl_trans": "detail_transaction_id_int",
+    "trl_event": "detail_workorder_id_int",
+    "trl_sqlidentity": "detail_identity_int",
+    "par_sqlidentity": "part_identity_int",
+    "par_updatecount": "part_updatecount_int",
+}
+
+DATE_FIELDS = {
+    "trl_date": "detail_date_ts",
+    "trl_created": "detail_created_ts",
+    "trl_updated": "detail_updated_ts",
+    "par_created": "part_created_ts",
+    "par_updated": "part_updated_ts",
+    "par_laststatusupdate": "part_laststatusupdate_ts",
+}
+
+DECIMAL_FIELDS = {
+    "trl_qty": "detail_quantity_decimal",
+    "trl_price": "detail_price_decimal",
+    "trl_avgprice": "detail_avgprice_decimal",
+}
+
+INTEGER_FLAGS = {
+    source: f"dq_{source}_invalid"
+    for source in INTEGER_FIELDS
+}
+
+DATE_FLAGS = {
+    source: f"dq_{source}_invalid"
+    for source in DATE_FIELDS
+}
+
+DECIMAL_FLAGS = {
+    source: f"dq_{source}_invalid"
+    for source in DECIMAL_FIELDS
+}
+
+INFORMATION_FLAGS = [
+    "dq_negative_quantity",
+    "dq_negative_price",
+    "dq_zero_quantity",
+    "dq_zero_price",
+]
+
+QUALITY_FLAGS = (
+    list(INTEGER_FLAGS.values())
+    + list(DATE_FLAGS.values())
+    + list(DECIMAL_FLAGS.values())
+    + INFORMATION_FLAGS
+    + ["dq_any_issue"]
+)
+
+TYPED_FIELDS = (
+    [
+        pa.field(name, pa.int64())
+        for name in INTEGER_FIELDS.values()
+    ]
+    + [
+        pa.field(name, pa.timestamp("us"))
+        for name in DATE_FIELDS.values()
+    ]
+    + [
+        pa.field(name, pa.decimal128(20, 6))
+        for name in DECIMAL_FIELDS.values()
+    ]
+)
+
+QUALITY_FIELDS = [
+    pa.field(name, pa.bool_())
+    for name in QUALITY_FLAGS
+]
+
+ADDED_FIELDS = TYPED_FIELDS + QUALITY_FIELDS
+
+EXPECTED_SILVER_COLUMNS = (
+    EXPECTED_BRONZE_COLUMNS + len(ADDED_FIELDS)
+)
+
+assert len(TYPED_FIELDS) == 14
+assert len(QUALITY_FLAGS) == 19
+assert EXPECTED_SILVER_COLUMNS == 68
+
+
+# ============================================================
+# 3. VALUE PARSING
+# ============================================================
+
+def missing(value):
+    return value is None or str(value).strip() == ""
+
+
+def parse_integer(value):
+    if missing(value):
+        return None, False
+
+    text = str(value).strip()
+
+    if not re.fullmatch(r"[+-]?\d+", text):
+        return None, True
+
+    try:
+        number = int(text)
+    except ValueError:
+        return None, True
+
+    if not -(2**63) <= number < 2**63:
+        return None, True
+
+    return number, False
+
+
+def parse_decimal(value):
+    if missing(value):
+        return None, False
+
+    try:
+        number = Decimal(str(value).strip())
+
+        if not number.is_finite():
+            return None, True
+
+        number = number.quantize(
+            Decimal("0.000001")
+        )
+
+        if abs(number) >= Decimal("100000000000000"):
+            return None, True
+
+        return number, False
+
+    except (InvalidOperation, ValueError, OverflowError):
+        return None, True
+
+
+@lru_cache(maxsize=100000)
+def parse_date_cached(text):
+    text = re.sub(r"\s+", " ", text.strip())
+
+    formats = [
+        "%b %d %Y %I:%M%p",
+        "%b %d %Y %I:%M:%S%p",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+
+    return None
+
+
+def parse_date(value):
+    if missing(value):
+        return None, False
+
+    result = parse_date_cached(str(value))
+    return result, result is None
+
+
+# ============================================================
+# 4. TRANSFORM A SINGLE RECORD
+# ============================================================
+
+def transform_row(source):
+    result = dict(source)
+    flags = {}
+
+    for original, target in INTEGER_FIELDS.items():
+        value, invalid = parse_integer(
+            source.get(original)
+        )
+
+        result[target] = value
+        flags[INTEGER_FLAGS[original]] = invalid
+
+    for original, target in DATE_FIELDS.items():
+        value, invalid = parse_date(
+            source.get(original)
+        )
+
+        result[target] = value
+        flags[DATE_FLAGS[original]] = invalid
+
+    for original, target in DECIMAL_FIELDS.items():
+        value, invalid = parse_decimal(
+            source.get(original)
+        )
+
+        result[target] = value
+        flags[DECIMAL_FLAGS[original]] = invalid
+
+    # Required identifiers must be present.
+    # trl_event and par_* identifiers can be null.
+    for field in [
+        "trl_trans",
+        "trl_sqlidentity",
+    ]:
+        if missing(source.get(field)):
+            flags[INTEGER_FLAGS[field]] = True
+
+    qty = result["detail_quantity_decimal"]
+    price = result["detail_price_decimal"]
+
+    flags["dq_negative_quantity"] = (
+        qty is not None and qty < 0
+    )
+    flags["dq_negative_price"] = (
+        price is not None and price < 0
+    )
+    flags["dq_zero_quantity"] = (
+        qty is not None and qty == 0
+    )
+    flags["dq_zero_price"] = (
+        price is not None and price == 0
+    )
+
+    # Informational financial flags do not count
+    # as parsing or required-field failures.
+    error_flags = (
+        list(INTEGER_FLAGS.values())
+        + list(DATE_FLAGS.values())
+        + list(DECIMAL_FLAGS.values())
+    )
+
+    flags["dq_any_issue"] = any(
+        flags[name] for name in error_flags
+    )
+
+    result.update(flags)
+
+    return result
+
+
+# ============================================================
+# 5. OUTPUT SAFETY
+# ============================================================
+
+def check_outputs():
+    if not BRONZE_DIR.is_dir():
+        raise FileNotFoundError(
+            f"Bronze directory missing: {BRONZE_DIR}"
+        )
+
+    for path in [
+        SILVER_DIR,
+        STAGING_DIR,
+        MANIFEST_FILE,
+    ]:
+        if path.exists():
+            raise FileExistsError(
+                "Existing Silver artifact must be preserved: "
+                f"{path}"
+            )
+
+
+# ============================================================
+# 6. SOURCE VALIDATION
+# ============================================================
+
+def inspect_sources():
+    files = sorted(
+        BRONZE_DIR.glob("*.parquet")
+    )
+
+    if len(files) != EXPECTED_FILES:
+        raise ValueError(
+            f"Expected {EXPECTED_FILES} files, "
+            f"found {len(files)}"
+        )
+
+    schema = pq.read_schema(files[0])
+
+    if len(schema) != EXPECTED_BRONZE_COLUMNS:
+        raise ValueError(
+            "Unexpected Bronze column count"
+        )
+
+    required = (
+        list(INTEGER_FIELDS)
+        + list(DATE_FIELDS)
+        + list(DECIMAL_FIELDS)
+    )
+
+    for field in required:
+        if field not in schema.names:
+            raise ValueError(
+                f"Missing Bronze field: {field}"
+            )
+
+    for field in schema:
+        if not field.type.equals(pa.string()):
+            raise ValueError(
+                f"Unexpected Bronze type: {field.name}"
+            )
+
+    for field in ADDED_FIELDS:
+        if field.name in schema.names:
+            raise ValueError(
+                f"Silver field collision: {field.name}"
+            )
+
+    total_rows = 0
+
+    for path in files:
+        metadata = pq.read_metadata(path)
+        actual_schema = pq.read_schema(path)
+
+        if not actual_schema.equals(
+            schema,
+            check_metadata=False,
+        ):
+            raise ValueError(
+                f"Bronze schema mismatch: {path.name}"
+            )
+
+        total_rows += metadata.num_rows
+
+    if total_rows != EXPECTED_ROWS:
+        raise ValueError(
+            f"Bronze row mismatch: {total_rows}"
+        )
+
+    print("Bronze files:", len(files))
+    print("Bronze records:", f"{total_rows:,}")
+    print("Bronze columns:", len(schema))
+    print("Bronze validation: PASS")
+
+    return files, schema
+
+
+# ============================================================
+# 7. MAIN TRANSFORMATION
+# ============================================================
+
+def transform_transaction_details():
+    print("=" * 70)
+    print("STEP 6.6B - TRANSACTION DETAILS SILVER")
+    print("=" * 70)
+
+    check_outputs()
+
+    files, bronze_schema = inspect_sources()
+
+    silver_schema = pa.schema(
+        list(bronze_schema) + ADDED_FIELDS
+    )
+
+    quality_counts = Counter({
+        name: 0
+        for name in QUALITY_FLAGS
+    })
+
+    total_written = 0
+    total_verified = 0
+
+    STAGING_DIR.mkdir(
+        parents=True,
+        exist_ok=False
+    )
+
+    for index, source_path in enumerate(files, 1):
+        staged_path = STAGING_DIR / source_path.name
+        written = 0
+
+        # Transform one Bronze file at a time.
+        # Readers/writers close before verification.
+
+        with pq.ParquetFile(str(source_path)) as source:
+            expected_file_rows = source.metadata.num_rows
+
+            with pq.ParquetWriter(
+                str(staged_path),
+                silver_schema,
+                compression="snappy",
+                version="2.6",
+            ) as writer:
+
+                for batch in source.iter_batches(
+                    batch_size=BATCH_SIZE
+                ):
+                    original_records = (
+                        pa.Table.from_batches(
+                            [batch]
+                        ).to_pylist()
+                    )
+
+                    silver_records = [
+                        transform_row(record)
+                        for record in original_records
+                    ]
+
+                    for record in silver_records:
+                        for flag in QUALITY_FLAGS:
+                            if record[flag]:
+                                quality_counts[flag] += 1
+
+                    silver_table = pa.Table.from_pylist(
+                        silver_records,
+                        schema=silver_schema,
+                    )
+
+                    writer.write_table(silver_table)
+
+                    written += silver_table.num_rows
+
+        if written != expected_file_rows:
+            raise ValueError(
+                f"Row mismatch: {source_path.name}"
+            )
+
+        # Verify actual staged Parquet.
+        # Compare every original field and row
+        # against the corresponding Bronze file.
+
+        verified = 0
+
+        with pq.ParquetFile(str(source_path)) as original:
+            with pq.ParquetFile(str(staged_path)) as silver:
+
+                if silver.metadata.num_rows != written:
+                    raise ValueError(
+                        f"Parquet row mismatch: {source_path.name}"
+                    )
+
+                if not silver.schema_arrow.equals(
+                    silver_schema,
+                    check_metadata=False,
+                ):
+                    raise ValueError(
+                        f"Silver schema mismatch: {source_path.name}"
+                    )
+
+                original_batches = original.iter_batches(
+                    batch_size=BATCH_SIZE,
+                    columns=bronze_schema.names,
+                )
+
+                silver_batches = silver.iter_batches(
+                    batch_size=BATCH_SIZE,
+                    columns=bronze_schema.names,
+                )
+
+                for source_batch, silver_batch in zip(
+                    original_batches,
+                    silver_batches,
+                    strict=True,
+                ):
+                    if not source_batch.equals(
+                        silver_batch,
+                        check_metadata=False,
+                    ):
+                        raise ValueError(
+                            "Original Bronze values changed: "
+                            f"{source_path.name}"
+                        )
+
+                    verified += source_batch.num_rows
+
+        if verified != written:
+            raise ValueError(
+                f"Original-value verification failed: "
+                f"{source_path.name}"
+            )
+
+        total_written += written
+        total_verified += verified
+
+        print(
+            f"[{index}/{EXPECTED_FILES}] "
+            f"{source_path.name}: {written:,} rows "
+            f"| total {total_written:,}",
+            flush=True,
+        )
+
+    # ========================================================
+    # 8. GLOBAL STAGING VALIDATION
+    # ========================================================
+
+    if total_written != EXPECTED_ROWS:
+        raise ValueError(
+            "Global Silver row reconciliation failed"
+        )
+
+    if total_verified != EXPECTED_ROWS:
+        raise ValueError(
+            "Global Bronze preservation check failed"
+        )
+
+    staged_files = sorted(
+        STAGING_DIR.glob("*.parquet")
+    )
+
+    if len(staged_files) != EXPECTED_FILES:
+        raise ValueError(
+            "Staged Silver file count mismatch"
+        )
+
+    staged_rows = 0
+
+    for path in staged_files:
+        metadata = pq.read_metadata(path)
+        actual_schema = pq.read_schema(path)
+
+        if not actual_schema.equals(
+            silver_schema,
+            check_metadata=False,
+        ):
+            raise ValueError(
+                f"Staged schema mismatch: {path.name}"
+            )
+
+        staged_rows += metadata.num_rows
+
+    if staged_rows != EXPECTED_ROWS:
+        raise ValueError(
+            "Staged Parquet row total mismatch"
+        )
+
+    print("\nFINAL STAGING VALIDATION")
+    print("-" * 60)
+    print("Silver files:", len(staged_files))
+    print("Silver records:", f"{staged_rows:,}")
+    print("Silver columns:", len(silver_schema))
+    print("Original Bronze values preserved: PASS")
+
+    # ========================================================
+    # 9. WINDOWS-SAFE PUBLICATION
+    # ========================================================
+
+    del staged_files
+    gc.collect()
+
+    if SILVER_DIR.exists():
+        raise FileExistsError(
+            "Final Silver directory appeared during processing"
+        )
+
+    # If Windows denies the rename, preserve staging.
+    # Do not rerun or delete the transformed files.
+    STAGING_DIR.rename(SILVER_DIR)
+
+    # ========================================================
+    # 10. COMPLETION MANIFEST
+    # ========================================================
+
+    manifest = {
+        "project": "AssetFusion360",
+        "phase": "Silver",
+        "step": "6.6",
+        "dataset": "AMPS Transaction Details",
+        "status": "COMPLETED",
+        "engine": "PyArrow",
+        "orchestration": "Kedro SequentialRunner",
+        "bronze_source": (
+            BRONZE_DIR.relative_to(ROOT).as_posix()
+        ),
+        "silver_output": (
+            SILVER_DIR.relative_to(ROOT).as_posix()
+        ),
+        "bronze_rows": EXPECTED_ROWS,
+        "silver_rows": total_written,
+        "bronze_columns": len(bronze_schema),
+        "silver_columns": len(silver_schema),
+        "parquet_files": EXPECTED_FILES,
+        "original_source_fields_preserved": True,
+        "row_count_preserved": True,
+        "quality_flag_counts": dict(quality_counts),
+        "transformation_notes": [
+            "Preserve original Bronze fields and lineage.",
+            "Retain optional work-order references.",
+            "Retain optional part attributes.",
+            "Parse six date/timestamp fields.",
+            "Convert quantities and prices to decimal(20,6).",
+            "Preserve negative quantities and prices.",
+            "Keep parsing failures as null with flags.",
+            "Do not filter or deduplicate records.",
+        ],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST_FILE.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST_FILE.open(
+        "x",
+        encoding="utf-8",
+    ) as stream:
+        json.dump(
+            manifest,
+            stream,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    print("\n" + "=" * 70)
+    print("AMPS TRANSACTION DETAILS SILVER SUMMARY")
+    print("=" * 70)
+
+    print("Bronze records:", f"{EXPECTED_ROWS:,}")
+    print("Silver records:", f"{total_written:,}")
+    print("Parquet files:", EXPECTED_FILES)
+    print("Bronze columns:", len(bronze_schema))
+    print("Silver columns:", len(silver_schema))
+
+    print("\nQUALITY FLAG COUNTS")
+
+    for flag in QUALITY_FLAGS:
+        print(f"{flag}: {quality_counts[flag]:,}")
+
+    print(
+        "\nTRANSACTION DETAILS SILVER TRANSFORMATION: SUCCESS"
+    )
+
+    return manifest
+
+
+# ============================================================
+# 11. KEDRO PIPELINE
+# ============================================================
+
+def create_silver_transaction_details_pipeline():
+    return pipeline([
+        node(
+            func=transform_transaction_details,
+            inputs=None,
+            outputs="amps_transaction_details_silver_manifest",
+            name="transform_amps_transaction_details_silver",
+            tags=["silver", "amps", "transaction_details"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "amps_transaction_details_silver_manifest": (
+            MemoryDataset()
+        )
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_silver_transaction_details_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load(
+        "amps_transaction_details_silver_manifest"
+    )
+
+    if result.get("status") != "COMPLETED":
+        raise RuntimeError(
+            "Transaction Details Silver manifest validation failed"
+        )
+
+    print(
+        "\nKEDRO TRANSACTION DETAILS SILVER PIPELINE: SUCCESS"
+    )
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: silver_transactions_transformation.py
+================================================================================
+
+"""
+AssetFusion360 Capstone
+Step 6.5B - AMPS Transactions Silver Transformation
+
+Preserves:
+- All 755,122 records
+- All 18 original Bronze columns
+- All original field values and source lineage
+- Business codes and optional references
+
+Adds:
+- 7 typed analytical columns
+- 8 data-quality flags
+
+No Bronze modifications or existing-output overwrites.
+"""
+
+import gc
+import json
+import re
+
+from collections import Counter
+from datetime import datetime, timezone
+from functools import lru_cache
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+# ============================================================
+# 1. CONFIGURATION
+# ============================================================
+
+ROOT = Path(__file__).resolve().parents[3]
+
+BRONZE_DIR = (
+    ROOT / "data" / "02_bronze_ingested_data"
+    / "amps_transactions"
+)
+
+SILVER_ROOT = (
+    ROOT / "data" / "03_silver_cleaned_data"
+)
+
+SILVER_DIR = SILVER_ROOT / "amps_transactions"
+
+STAGING_DIR = (
+    SILVER_ROOT / "_staging_amps_transactions"
+)
+
+MANIFEST_FILE = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "amps_transactions_silver_transformation_manifest.json"
+)
+
+EXPECTED_FILES = 152
+EXPECTED_ROWS = 755_122
+EXPECTED_BRONZE_COLUMNS = 18
+BATCH_SIZE = 5000
+
+
+# ============================================================
+# 2. SILVER COLUMN DEFINITIONS
+# ============================================================
+
+INTEGER_FIELDS = {
+    "tra_code": "transaction_code_int",
+    "tra_sqlidentity": "transaction_identity_int",
+    "tra_req": "transaction_request_int",
+    "tra_updatecount": "transaction_updatecount_int",
+}
+
+DATE_FIELDS = {
+    "tra_date": "transaction_date_ts",
+    "tra_created": "transaction_created_ts",
+    "tra_updated": "transaction_updated_ts",
+}
+
+INTEGER_FLAGS = {
+    "tra_code": "dq_transaction_code_invalid",
+    "tra_sqlidentity": "dq_transaction_identity_invalid",
+    "tra_req": "dq_transaction_request_invalid",
+    "tra_updatecount": "dq_transaction_updatecount_invalid",
+}
+
+DATE_FLAGS = {
+    "tra_date": "dq_transaction_date_invalid",
+    "tra_created": "dq_transaction_created_invalid",
+    "tra_updated": "dq_transaction_updated_invalid",
+}
+
+QUALITY_FLAGS = (
+    list(INTEGER_FLAGS.values())
+    + list(DATE_FLAGS.values())
+    + ["dq_any_issue"]
+)
+
+TYPED_FIELDS = (
+    [
+        pa.field(name, pa.int64())
+        for name in INTEGER_FIELDS.values()
+    ]
+    + [
+        pa.field(name, pa.timestamp("us"))
+        for name in DATE_FIELDS.values()
+    ]
+)
+
+QUALITY_FIELDS = [
+    pa.field(name, pa.bool_())
+    for name in QUALITY_FLAGS
+]
+
+ADDED_FIELDS = TYPED_FIELDS + QUALITY_FIELDS
+
+EXPECTED_SILVER_COLUMNS = (
+    EXPECTED_BRONZE_COLUMNS + len(ADDED_FIELDS)
+)
+
+assert len(TYPED_FIELDS) == 7
+assert len(QUALITY_FLAGS) == 8
+assert EXPECTED_SILVER_COLUMNS == 33
+
+
+# ============================================================
+# 3. VALUE PARSING
+# ============================================================
+
+def missing(value):
+    return value is None or str(value).strip() == ""
+
+
+def parse_integer(value):
+    if missing(value):
+        return None, False
+
+    text = str(value).strip()
+
+    if not re.fullmatch(r"[+-]?\d+", text):
+        return None, True
+
+    try:
+        result = int(text)
+    except ValueError:
+        return None, True
+
+    if not -(2**63) <= result < 2**63:
+        return None, True
+
+    return result, False
+
+
+@lru_cache(maxsize=100000)
+def parse_date_cached(text):
+    normalized = re.sub(
+        r"\s+", " ", text.strip()
+    )
+
+    formats = [
+        "%b %d %Y %I:%M%p",
+        "%b %d %Y %I:%M:%S%p",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(
+                normalized, fmt
+            )
+        except ValueError:
+            continue
+
+    return None
+
+
+def parse_date(value):
+    if missing(value):
+        return None, False
+
+    result = parse_date_cached(str(value))
+    return result, result is None
+
+
+# ============================================================
+# 4. TRANSFORM A SINGLE RECORD
+# ============================================================
+
+def transform_row(source):
+    result = dict(source)
+    flags = {}
+
+    for original, target in INTEGER_FIELDS.items():
+        value, invalid = parse_integer(
+            source.get(original)
+        )
+
+        result[target] = value
+        flags[INTEGER_FLAGS[original]] = invalid
+
+    for original, target in DATE_FIELDS.items():
+        value, invalid = parse_date(
+            source.get(original)
+        )
+
+        result[target] = value
+        flags[DATE_FLAGS[original]] = invalid
+
+    # Required source identifiers are flagged
+    # when missing; tra_req remains optional.
+    for source_field in [
+        "tra_code",
+        "tra_sqlidentity",
+    ]:
+        if missing(source.get(source_field)):
+            flags[INTEGER_FLAGS[source_field]] = True
+
+    flags["dq_any_issue"] = any(flags.values())
+
+    result.update(flags)
+
+    return result
+
+
+# ============================================================
+# 5. OUTPUT SAFETY
+# ============================================================
+
+def check_outputs():
+    if not BRONZE_DIR.is_dir():
+        raise FileNotFoundError(
+            f"Bronze directory missing: {BRONZE_DIR}"
+        )
+
+    for path in [
+        SILVER_DIR,
+        STAGING_DIR,
+        MANIFEST_FILE,
+    ]:
+        if path.exists():
+            raise FileExistsError(
+                "Existing Silver artifact must be preserved: "
+                f"{path}"
+            )
+
+
+# ============================================================
+# 6. SOURCE VALIDATION
+# ============================================================
+
+def inspect_sources():
+    files = sorted(
+        BRONZE_DIR.glob("*.parquet")
+    )
+
+    if len(files) != EXPECTED_FILES:
+        raise ValueError(
+            f"Expected {EXPECTED_FILES} files, "
+            f"found {len(files)}"
+        )
+
+    schema = pq.read_schema(files[0])
+
+    if len(schema) != EXPECTED_BRONZE_COLUMNS:
+        raise ValueError(
+            "Unexpected Bronze column count"
+        )
+
+    required = [
+        *INTEGER_FIELDS.keys(),
+        *DATE_FIELDS.keys(),
+        "tra_type",
+        "tra_status",
+        "tra_fromentity",
+        "tra_fromcode",
+        "tra_toentity",
+        "tra_tocode",
+    ]
+
+    for field in required:
+        if field not in schema.names:
+            raise ValueError(
+                f"Missing required field: {field}"
+            )
+
+    for field in schema:
+        if not field.type.equals(pa.string()):
+            raise ValueError(
+                f"Unexpected Bronze type: {field.name}"
+            )
+
+    for field in ADDED_FIELDS:
+        if field.name in schema.names:
+            raise ValueError(
+                f"Silver field collision: {field.name}"
+            )
+
+    total_rows = 0
+
+    for path in files:
+        metadata = pq.read_metadata(path)
+        actual_schema = pq.read_schema(path)
+
+        if not actual_schema.equals(
+            schema,
+            check_metadata=False,
+        ):
+            raise ValueError(
+                f"Schema mismatch: {path.name}"
+            )
+
+        total_rows += metadata.num_rows
+
+    if total_rows != EXPECTED_ROWS:
+        raise ValueError(
+            f"Bronze row mismatch: {total_rows}"
+        )
+
+    print("Bronze files:", len(files))
+    print("Bronze records:", f"{total_rows:,}")
+    print("Bronze columns:", len(schema))
+    print("Bronze validation: PASS")
+
+    return files, schema
+
+
+# ============================================================
+# 7. MAIN TRANSFORMATION
+# ============================================================
+
+def transform_transactions():
+    print("=" * 70)
+    print("STEP 6.5B - AMPS TRANSACTIONS SILVER")
+    print("=" * 70)
+
+    check_outputs()
+
+    files, bronze_schema = inspect_sources()
+
+    silver_schema = pa.schema(
+        list(bronze_schema) + ADDED_FIELDS
+    )
+
+    quality_counts = Counter({
+        name: 0
+        for name in QUALITY_FLAGS
+    })
+
+    total_written = 0
+    total_verified = 0
+
+    STAGING_DIR.mkdir(
+        parents=True,
+        exist_ok=False,
+    )
+
+    for index, source_path in enumerate(files, 1):
+        staged_path = STAGING_DIR / source_path.name
+        written = 0
+
+        # Read and transform. All file handles are
+        # closed before the file is validated.
+
+        with pq.ParquetFile(str(source_path)) as source:
+            expected_file_rows = source.metadata.num_rows
+
+            with pq.ParquetWriter(
+                str(staged_path),
+                silver_schema,
+                compression="snappy",
+                version="2.6",
+            ) as writer:
+
+                for batch in source.iter_batches(
+                    batch_size=BATCH_SIZE
+                ):
+                    source_records = (
+                        pa.Table.from_batches(
+                            [batch]
+                        ).to_pylist()
+                    )
+
+                    transformed = [
+                        transform_row(record)
+                        for record in source_records
+                    ]
+
+                    for record in transformed:
+                        for flag in QUALITY_FLAGS:
+                            if record[flag]:
+                                quality_counts[flag] += 1
+
+                    silver_table = pa.Table.from_pylist(
+                        transformed,
+                        schema=silver_schema,
+                    )
+
+                    writer.write_table(silver_table)
+
+                    written += silver_table.num_rows
+
+        if written != expected_file_rows:
+            raise ValueError(
+                f"Row mismatch: {source_path.name}"
+            )
+
+        # Independently verify that the Silver file
+        # preserves every original Bronze value.
+
+        verified = 0
+
+        with pq.ParquetFile(str(source_path)) as original:
+            with pq.ParquetFile(str(staged_path)) as silver:
+
+                if silver.metadata.num_rows != written:
+                    raise ValueError(
+                        f"Parquet rows mismatch: {source_path.name}"
+                    )
+
+                if not silver.schema_arrow.equals(
+                    silver_schema,
+                    check_metadata=False,
+                ):
+                    raise ValueError(
+                        f"Silver schema mismatch: {source_path.name}"
+                    )
+
+                original_batches = original.iter_batches(
+                    batch_size=BATCH_SIZE,
+                    columns=bronze_schema.names,
+                )
+
+                silver_batches = silver.iter_batches(
+                    batch_size=BATCH_SIZE,
+                    columns=bronze_schema.names,
+                )
+
+                for source_batch, silver_batch in zip(
+                    original_batches,
+                    silver_batches,
+                    strict=True,
+                ):
+                    if not source_batch.equals(
+                        silver_batch,
+                        check_metadata=False,
+                    ):
+                        raise ValueError(
+                            "Bronze values changed: "
+                            f"{source_path.name}"
+                        )
+
+                    verified += source_batch.num_rows
+
+        if verified != written:
+            raise ValueError(
+                f"Original value count mismatch: "
+                f"{source_path.name}"
+            )
+
+        total_written += written
+        total_verified += verified
+
+        print(
+            f"[{index}/{EXPECTED_FILES}] "
+            f"{source_path.name}: {written:,} rows "
+            f"| total {total_written:,}",
+            flush=True,
+        )
+
+    # ========================================================
+    # 8. FINAL STAGING RECONCILIATION
+    # ========================================================
+
+    if total_written != EXPECTED_ROWS:
+        raise ValueError(
+            "Global Silver row count mismatch"
+        )
+
+    if total_verified != EXPECTED_ROWS:
+        raise ValueError(
+            "Global Bronze preservation check failed"
+        )
+
+    staged_files = sorted(
+        STAGING_DIR.glob("*.parquet")
+    )
+
+    if len(staged_files) != EXPECTED_FILES:
+        raise ValueError(
+            "Staged Silver file count mismatch"
+        )
+
+    staged_rows = 0
+
+    for file in staged_files:
+        metadata = pq.read_metadata(file)
+        actual_schema = pq.read_schema(file)
+
+        if not actual_schema.equals(
+            silver_schema,
+            check_metadata=False,
+        ):
+            raise ValueError(
+                f"Final schema mismatch: {file.name}"
+            )
+
+        staged_rows += metadata.num_rows
+
+    if staged_rows != EXPECTED_ROWS:
+        raise ValueError(
+            "Staged Parquet row count mismatch"
+        )
+
+    print("\nFINAL STAGING VALIDATION")
+    print("-" * 60)
+
+    print("Silver records:", f"{staged_rows:,}")
+    print("Silver files:", len(staged_files))
+    print("Silver columns:", len(silver_schema))
+    print("Original Bronze values preserved: PASS")
+
+    # ========================================================
+    # 9. WINDOWS-SAFE PUBLICATION
+    # ========================================================
+
+    del staged_files
+    gc.collect()
+
+    if SILVER_DIR.exists():
+        raise FileExistsError(
+            "Final Silver directory appeared during processing"
+        )
+
+    # Rename only after all readers and writers close.
+    # If publication fails, preserve staging for recovery.
+    STAGING_DIR.rename(SILVER_DIR)
+
+    # ========================================================
+    # 10. INGESTION MANIFEST
+    # ========================================================
+
+    manifest = {
+        "project": "AssetFusion360",
+        "phase": "Silver",
+        "step": "6.5",
+        "dataset": "AMPS Transactions",
+        "status": "COMPLETED",
+        "engine": "PyArrow",
+        "orchestration": "Kedro SequentialRunner",
+        "bronze_source": (
+            BRONZE_DIR.relative_to(ROOT).as_posix()
+        ),
+        "silver_output": (
+            SILVER_DIR.relative_to(ROOT).as_posix()
+        ),
+        "bronze_rows": EXPECTED_ROWS,
+        "silver_rows": total_written,
+        "bronze_columns": len(bronze_schema),
+        "silver_columns": len(silver_schema),
+        "parquet_files": EXPECTED_FILES,
+        "original_source_fields_preserved": True,
+        "row_count_preserved": True,
+        "quality_flag_counts": dict(quality_counts),
+        "transformation_notes": [
+            "Preserve original transaction business codes.",
+            "Preserve mixed-format from/to reference codes.",
+            "Keep tra_req null when absent.",
+            "Convert tra_updatecount to integer, not date.",
+            "Do not delete, deduplicate, or impute records.",
+            "Preserve all original Bronze source-lineage fields.",
+        ],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST_FILE.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST_FILE.open(
+        "x",
+        encoding="utf-8",
+    ) as stream:
+        json.dump(
+            manifest,
+            stream,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    print("\n" + "=" * 70)
+    print("AMPS TRANSACTIONS SILVER SUMMARY")
+    print("=" * 70)
+
+    print("Bronze records:", f"{EXPECTED_ROWS:,}")
+    print("Silver records:", f"{total_written:,}")
+    print("Parquet files:", EXPECTED_FILES)
+    print("Bronze columns:", len(bronze_schema))
+    print("Silver columns:", len(silver_schema))
+
+    print("\nQUALITY FLAG COUNTS")
+
+    for flag in QUALITY_FLAGS:
+        print(f"{flag}: {quality_counts[flag]:,}")
+
+    print("\nTRANSACTIONS SILVER TRANSFORMATION: SUCCESS")
+
+    return manifest
+
+
+# ============================================================
+# 11. KEDRO PIPELINE
+# ============================================================
+
+def create_silver_transactions_pipeline():
+    return pipeline([
+        node(
+            func=transform_transactions,
+            inputs=None,
+            outputs="amps_transactions_silver_manifest",
+            name="transform_amps_transactions_silver",
+            tags=["silver", "amps", "transactions"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "amps_transactions_silver_manifest": MemoryDataset()
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_silver_transactions_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load(
+        "amps_transactions_silver_manifest"
+    )
+
+    if result.get("status") != "COMPLETED":
+        raise RuntimeError(
+            "Silver Transactions manifest validation failed"
+        )
+
+    print("\nKEDRO TRANSACTIONS SILVER PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: silver_workorders_transformation.py
+================================================================================
+
+"""
+AssetFusion360 - Step 6.3B
+AMPS Work Orders Bronze-to-Silver Transformation
+
+Preserves all rows and original fields.
+Does not modify Bronze.
+Does not overwrite existing Silver outputs.
+Uses PyArrow, Kedro and Windows-safe file handling.
+"""
+
+import gc
+import json
+import re
+from collections import Counter
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from functools import lru_cache
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+BRONZE_DIR = (
+    ROOT / "data" / "02_bronze_ingested_data"
+    / "amps_workorders"
+)
+
+SILVER_ROOT = ROOT / "data" / "03_silver_cleaned_data"
+SILVER_DIR = SILVER_ROOT / "amps_workorders"
+STAGING_DIR = SILVER_ROOT / "_staging_amps_workorders"
+
+MANIFEST_FILE = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "amps_workorders_silver_transformation_manifest.json"
+)
+
+EXPECTED_FILES = 447
+EXPECTED_ROWS = 2_231_535
+EXPECTED_BRONZE_COLUMNS = 59
+BATCH_SIZE = 5000
+
+DATE_FIELDS = [
+    "evt_date",
+    "evt_reported",
+    "evt_start",
+    "evt_due",
+    "evt_completed",
+    "evt_created",
+    "evt_updated",
+]
+
+DATE_OUTPUTS = {
+    field: f"{field}_ts"
+    for field in DATE_FIELDS
+}
+
+DATE_FLAGS = {
+    field: f"dq_{field}_invalid"
+    for field in DATE_FIELDS
+}
+
+NUMERIC_FIELDS = {
+    "evt_sqlidentity": (
+        "wo_identity_int",
+        "dq_identity_invalid",
+    ),
+    "evt_duration": (
+        "wo_duration_decimal",
+        "dq_duration_invalid",
+    ),
+    "evt_updatecount": (
+        "wo_updatecount_int",
+        "dq_updatecount_invalid",
+    ),
+}
+
+OTHER_FLAGS = [
+    "dq_workorder_code_missing",
+    "dq_asset_ref_missing",
+    "dq_any_issue",
+]
+
+ALL_FLAGS = (
+    list(DATE_FLAGS.values())
+    + [config[1] for config in NUMERIC_FIELDS.values()]
+    + OTHER_FLAGS
+)
+
+ADDED_FIELDS = (
+    [
+        pa.field(output, pa.timestamp("us"))
+        for output in DATE_OUTPUTS.values()
+    ]
+    + [
+        pa.field("wo_identity_int", pa.int64()),
+        pa.field("wo_duration_decimal", pa.decimal128(20, 6)),
+        pa.field("wo_updatecount_int", pa.int64()),
+    ]
+    + [
+        pa.field(flag, pa.bool_())
+        for flag in ALL_FLAGS
+    ]
+)
+
+EXPECTED_SILVER_COLUMNS = (
+    EXPECTED_BRONZE_COLUMNS + len(ADDED_FIELDS)
+)
+
+assert EXPECTED_SILVER_COLUMNS == 82
+
+
+def missing(value):
+    return value is None or str(value).strip() == ""
+
+
+def parse_int(value):
+    if missing(value):
+        return None, False
+
+    text = str(value).strip()
+
+    if not re.fullmatch(r"[+-]?\d+", text):
+        return None, True
+
+    try:
+        result = int(text)
+    except ValueError:
+        return None, True
+
+    if not -(2**63) <= result < 2**63:
+        return None, True
+
+    return result, False
+
+
+def parse_decimal(value):
+    if missing(value):
+        return None, False
+
+    try:
+        result = Decimal(str(value).strip())
+
+        if not result.is_finite():
+            return None, True
+
+        result = result.quantize(
+            Decimal("0.000001")
+        )
+
+        if abs(result) >= Decimal("100000000000000"):
+            return None, True
+
+        return result, False
+
+    except (InvalidOperation, ValueError, OverflowError):
+        return None, True
+
+
+@lru_cache(maxsize=100000)
+def parse_date_cached(text):
+    normalized = re.sub(r"\s+", " ", text.strip())
+
+    formats = [
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+        "%b %d %Y %I:%M%p",
+        "%b %d %Y %I:%M:%S%p",
+        "%b %d %Y %H:%M:%S",
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(normalized, fmt)
+        except ValueError:
+            pass
+
+    return None
+
+
+def parse_date(value):
+    if missing(value):
+        return None, False
+
+    result = parse_date_cached(str(value))
+    return result, result is None
+
+
+def transform_row(source):
+    result = dict(source)
+    flags = {}
+
+    for field in DATE_FIELDS:
+        converted, invalid = parse_date(
+            source.get(field)
+        )
+
+        result[DATE_OUTPUTS[field]] = converted
+        flags[DATE_FLAGS[field]] = invalid
+
+    identity, identity_invalid = parse_int(
+        source.get("evt_sqlidentity")
+    )
+
+    duration, duration_invalid = parse_decimal(
+        source.get("evt_duration")
+    )
+
+    updatecount, updatecount_invalid = parse_int(
+        source.get("evt_updatecount")
+    )
+
+    result["wo_identity_int"] = identity
+    result["wo_duration_decimal"] = duration
+    result["wo_updatecount_int"] = updatecount
+
+    flags["dq_identity_invalid"] = (
+        identity_invalid
+        or missing(source.get("evt_sqlidentity"))
+    )
+
+    flags["dq_duration_invalid"] = duration_invalid
+    flags["dq_updatecount_invalid"] = updatecount_invalid
+
+    flags["dq_workorder_code_missing"] = missing(
+        source.get("evt_code")
+    )
+
+    flags["dq_asset_ref_missing"] = missing(
+        source.get("evt_object")
+    )
+
+    flags["dq_any_issue"] = any(flags.values())
+
+    result.update(flags)
+    return result
+
+
+def check_outputs():
+    if not BRONZE_DIR.is_dir():
+        raise FileNotFoundError(BRONZE_DIR)
+
+    for path in [
+        SILVER_DIR,
+        STAGING_DIR,
+        MANIFEST_FILE,
+    ]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output must be preserved: {path}"
+            )
+
+
+def inspect_sources():
+    files = sorted(
+        BRONZE_DIR.glob("*.parquet")
+    )
+
+    if len(files) != EXPECTED_FILES:
+        raise ValueError(
+            f"Expected {EXPECTED_FILES} files, "
+            f"found {len(files)}"
+        )
+
+    schema = pq.read_schema(files[0])
+
+    if len(schema) != EXPECTED_BRONZE_COLUMNS:
+        raise ValueError("Unexpected Bronze schema")
+
+    required = [
+        "evt_code",
+        "evt_object",
+        *DATE_FIELDS,
+        *NUMERIC_FIELDS.keys(),
+    ]
+
+    for field in required:
+        if field not in schema.names:
+            raise ValueError(
+                f"Missing field: {field}"
+            )
+
+    if any(
+        not f.type.equals(pa.string())
+        for f in schema
+    ):
+        raise ValueError(
+            "Bronze fields must have string types"
+        )
+
+    if any(
+        field.name in schema.names
+        for field in ADDED_FIELDS
+    ):
+        raise ValueError(
+            "Silver field name collision"
+        )
+
+    total = 0
+
+    for path in files:
+        metadata = pq.read_metadata(path)
+        file_schema = pq.read_schema(path)
+
+        if not schema.equals(
+            file_schema,
+            check_metadata=False,
+        ):
+            raise ValueError(
+                f"Schema mismatch: {path.name}"
+            )
+
+        total += metadata.num_rows
+
+    if total != EXPECTED_ROWS:
+        raise ValueError(
+            f"Bronze row mismatch: {total}"
+        )
+
+    print("Source files:", len(files))
+    print("Source records:", f"{total:,}")
+    print("Source schema: PASS")
+
+    return files, schema
+
+
+def transform_workorders():
+    print("=" * 70)
+    print("STEP 6.3 - AMPS WORK ORDERS SILVER")
+    print("=" * 70)
+
+    check_outputs()
+    files, source_schema = inspect_sources()
+
+    silver_schema = pa.schema(
+        list(source_schema) + ADDED_FIELDS
+    )
+
+    quality_counts = Counter({
+        flag: 0 for flag in ALL_FLAGS
+    })
+
+    total_written = 0
+    total_verified = 0
+
+    STAGING_DIR.mkdir(
+        parents=True,
+        exist_ok=False,
+    )
+
+    for file_number, source_path in enumerate(files, 1):
+        staged_path = (
+            STAGING_DIR / source_path.name
+        )
+
+        source_reader = pq.ParquetFile(
+            str(source_path)
+        )
+
+        expected_batch_rows = (
+            source_reader.metadata.num_rows
+        )
+
+        written = 0
+
+        try:
+            with pq.ParquetWriter(
+                str(staged_path),
+                silver_schema,
+                compression="snappy",
+                version="2.6",
+            ) as writer:
+
+                for batch in source_reader.iter_batches(
+                    batch_size=BATCH_SIZE
+                ):
+                    source_table = pa.Table.from_batches(
+                        [batch]
+                    )
+
+                    records = source_table.to_pylist()
+
+                    silver_records = [
+                        transform_row(row)
+                        for row in records
+                    ]
+
+                    for record in silver_records:
+                        for flag in ALL_FLAGS:
+                            if record[flag]:
+                                quality_counts[flag] += 1
+
+                    silver_table = pa.Table.from_pylist(
+                        silver_records,
+                        schema=silver_schema,
+                    )
+
+                    writer.write_table(
+                        silver_table
+                    )
+
+                    written += silver_table.num_rows
+
+        finally:
+            source_reader.close()
+
+        if written != expected_batch_rows:
+            raise ValueError(
+                f"Row mismatch: {source_path.name}"
+            )
+
+        # Validate output on disk and verify all
+        # original Bronze values are unchanged.
+
+        source_check = pq.ParquetFile(
+            str(source_path)
+        )
+
+        silver_check = pq.ParquetFile(
+            str(staged_path)
+        )
+
+        try:
+            if silver_check.metadata.num_rows != written:
+                raise ValueError(
+                    f"Parquet row mismatch: {source_path.name}"
+                )
+
+            if not silver_check.schema_arrow.equals(
+                silver_schema,
+                check_metadata=False,
+            ):
+                raise ValueError(
+                    f"Silver schema mismatch: {source_path.name}"
+                )
+
+            source_batches = source_check.iter_batches(
+                batch_size=BATCH_SIZE
+            )
+
+            output_batches = silver_check.iter_batches(
+                batch_size=BATCH_SIZE,
+                columns=source_schema.names,
+            )
+
+            file_verified = 0
+
+            for original, output in zip(
+                source_batches,
+                output_batches,
+                strict=True,
+            ):
+                if not original.equals(
+                    output,
+                    check_metadata=False,
+                ):
+                    raise ValueError(
+                        "Bronze source values changed: "
+                        f"{source_path.name}"
+                    )
+
+                file_verified += original.num_rows
+
+            if file_verified != written:
+                raise ValueError(
+                    f"Verification count mismatch: {source_path.name}"
+                )
+
+            total_verified += file_verified
+
+        finally:
+            source_check.close()
+            silver_check.close()
+
+        total_written += written
+
+        print(
+            f"[{file_number}/{EXPECTED_FILES}] "
+            f"{source_path.name}: "
+            f"{written:,} rows | "
+            f"total {total_written:,}",
+            flush=True,
+        )
+
+    if total_written != EXPECTED_ROWS:
+        raise ValueError(
+            "Global Silver row count mismatch"
+        )
+
+    if total_verified != EXPECTED_ROWS:
+        raise ValueError(
+            "Global Bronze preservation check failed"
+        )
+
+    staged_files = list(
+        STAGING_DIR.glob("*.parquet")
+    )
+
+    if len(staged_files) != EXPECTED_FILES:
+        raise ValueError(
+            "Staged file inventory mismatch"
+        )
+
+    print("\nFINAL STAGING VALIDATION")
+    print("Silver records:", f"{total_written:,}")
+    print("Silver files:", len(staged_files))
+    print("Silver columns:", len(silver_schema))
+    print("Original Bronze values preserved: PASS")
+
+    # Explicitly release file handles before moving
+    # the directory. Important on Windows.
+    gc.collect()
+
+    if SILVER_DIR.exists():
+        raise FileExistsError(
+            "Final Silver directory appeared unexpectedly"
+        )
+
+    STAGING_DIR.rename(SILVER_DIR)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "phase": "Silver",
+        "step": "6.3",
+        "dataset": "AMPS Work Orders",
+        "status": "COMPLETED",
+        "engine": "PyArrow",
+        "orchestration": "Kedro SequentialRunner",
+        "bronze_source": (
+            BRONZE_DIR.relative_to(ROOT).as_posix()
+        ),
+        "silver_output": (
+            SILVER_DIR.relative_to(ROOT).as_posix()
+        ),
+        "bronze_rows": EXPECTED_ROWS,
+        "silver_rows": total_written,
+        "bronze_columns": len(source_schema),
+        "silver_columns": len(silver_schema),
+        "parquet_files": EXPECTED_FILES,
+        "original_source_fields_preserved": True,
+        "row_count_preserved": True,
+        "quality_flag_counts": dict(quality_counts),
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST_FILE.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST_FILE.open(
+        "x",
+        encoding="utf-8",
+    ) as handle:
+        json.dump(
+            manifest,
+            handle,
+            indent=2,
+        )
+
+    print("\n" + "=" * 70)
+    print("WORK ORDERS SILVER SUMMARY")
+    print("=" * 70)
+    print("Bronze rows:", f"{EXPECTED_ROWS:,}")
+    print("Silver rows:", f"{total_written:,}")
+    print("Parquet files:", EXPECTED_FILES)
+    print("Original columns:", len(source_schema))
+    print("Silver columns:", len(silver_schema))
+
+    print("\nQUALITY FLAGS")
+    for flag, count in quality_counts.items():
+        print(f"{flag}: {count:,}")
+
+    print("\nWORK ORDERS SILVER TRANSFORMATION: SUCCESS")
+
+    return manifest
+
+
+def create_silver_workorders_pipeline():
+    return pipeline([
+        node(
+            func=transform_workorders,
+            inputs=None,
+            outputs="amps_workorders_silver_manifest",
+            name="transform_amps_workorders_silver",
+            tags=["silver", "amps", "workorders"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "amps_workorders_silver_manifest": (
+            MemoryDataset()
+        )
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_silver_workorders_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load(
+        "amps_workorders_silver_manifest"
+    )
+
+    if result.get("status") != "COMPLETED":
+        raise RuntimeError(
+            "Silver manifest validation failed"
+        )
+
+    print("\nKEDRO WORK ORDERS SILVER PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+

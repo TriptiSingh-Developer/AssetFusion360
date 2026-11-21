@@ -1,0 +1,11 @@
+
+"""
+AssetFusion360 - Bronze Assets Kedro Pipeline Package.
+
+Expose the create_pipeline function so Kedro
+can discover and register this pipeline.
+"""
+
+from .pipeline import create_pipeline
+
+__all__ = ["create_pipeline"]

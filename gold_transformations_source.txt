@@ -1,0 +1,5567 @@
+﻿
+================================================================================
+SOURCE FILE: gold_asset_bridge.py
+================================================================================
+
+"""
+AssetFusion360 Capstone
+Step 7.6 - Gold Asset-Code Bridge
+
+Source: Gold dim_asset
+Target: Gold bridge_asset_code
+
+Grain: One row per distinct asset code.
+
+Preserves all candidate asset identities.
+Never automatically resolves ambiguous codes.
+Does not modify existing Bronze, Silver, or Gold data.
+"""
+
+import gc
+import json
+from collections import defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+SOURCE = (
+    ROOT / "data" / "04_gold_analytics"
+    / "dim_asset" / "part-00000.parquet"
+)
+
+GOLD_ROOT = ROOT / "data" / "04_gold_analytics"
+
+FINAL_DIR = GOLD_ROOT / "bridge_asset_code"
+STAGING_DIR = GOLD_ROOT / "_staging_bridge_asset_code"
+
+FINAL_FILE = FINAL_DIR / "part-00000.parquet"
+STAGING_FILE = STAGING_DIR / "part-00000.parquet"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_bridge_asset_code_manifest.json"
+)
+
+EXPECTED_ASSET_ROWS = 148_522
+EXPECTED_BRIDGE_ROWS = 148_521
+BATCH_SIZE = 5000
+
+
+GOLD_SCHEMA = pa.schema([
+    pa.field(
+        "asset_code", pa.string(), nullable=False
+    ),
+    pa.field(
+        "asset_match_count", pa.int32(), nullable=False
+    ),
+    pa.field(
+        "resolved_asset_identity", pa.int64()
+    ),
+    pa.field(
+        "candidate_asset_identities",
+        pa.list_(pa.int64())
+    ),
+    pa.field(
+        "resolution_status",
+        pa.string(), nullable=False
+    ),
+    pa.field(
+        "is_ambiguous", pa.bool_(), nullable=False
+    ),
+    pa.field(
+        "is_placeholder", pa.bool_(), nullable=False
+    ),
+])
+
+
+def check_outputs():
+    if not SOURCE.is_file():
+        raise FileNotFoundError(
+            f"Gold Asset Dimension missing: {SOURCE}"
+        )
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing artifact must be preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+def inspect_source():
+    with pq.ParquetFile(str(SOURCE)) as reader:
+        schema = reader.schema_arrow
+        rows = reader.metadata.num_rows
+
+    assert rows == EXPECTED_ASSET_ROWS, (
+        f"Unexpected asset count: {rows}"
+    )
+
+    required = {
+        "asset_identity": pa.int64(),
+        "asset_code": pa.string(),
+        "asset_code_match_count": pa.int32(),
+        "asset_code_ambiguous": pa.bool_(),
+        "asset_code_placeholder": pa.bool_(),
+    }
+
+    for name, expected_type in required.items():
+        assert name in schema.names, (
+            f"Missing Gold dimension column: {name}"
+        )
+
+        assert schema.field(name).type.equals(
+            expected_type
+        ), f"Unexpected type: {name}"
+
+    print("Source dim_asset records:", f"{rows:,}")
+    print("Source schema: PASS")
+
+
+def build_gold_asset_bridge():
+    print("=" * 65)
+    print("STEP 7.6 - BUILD GOLD ASSET-CODE BRIDGE")
+    print("=" * 65)
+
+    check_outputs()
+    inspect_source()
+
+    code_to_assets = defaultdict(list)
+    placeholder_by_code = {}
+    source_match_counts = {}
+    source_ambiguities = {}
+    identities = set()
+    total_assets = 0
+
+    with pq.ParquetFile(str(SOURCE)) as reader:
+        for batch in reader.iter_batches(
+            batch_size=BATCH_SIZE,
+            columns=[
+                "asset_identity",
+                "asset_code",
+                "asset_code_match_count",
+                "asset_code_ambiguous",
+                "asset_code_placeholder",
+            ],
+        ):
+            for row in batch.to_pylist():
+                total_assets += 1
+
+                identity = row["asset_identity"]
+                code = row["asset_code"]
+
+                assert identity is not None
+                assert identity not in identities
+                assert code is not None
+
+                identities.add(identity)
+                code_to_assets[code].append(identity)
+
+                placeholder_by_code[code] = (
+                    placeholder_by_code.get(code, False)
+                    or row["asset_code_placeholder"]
+                )
+
+                if code in source_match_counts:
+                    assert (
+                        source_match_counts[code]
+                        == row["asset_code_match_count"]
+                    )
+                    assert (
+                        source_ambiguities[code]
+                        == row["asset_code_ambiguous"]
+                    )
+                else:
+                    source_match_counts[code] = (
+                        row["asset_code_match_count"]
+                    )
+                    source_ambiguities[code] = (
+                        row["asset_code_ambiguous"]
+                    )
+
+    assert total_assets == EXPECTED_ASSET_ROWS
+    assert len(identities) == EXPECTED_ASSET_ROWS
+    assert len(code_to_assets) == EXPECTED_BRIDGE_ROWS
+
+    bridge_rows = []
+
+    for code in sorted(code_to_assets):
+        candidates = sorted(code_to_assets[code])
+        count = len(candidates)
+
+        assert count == source_match_counts[code]
+        assert (count > 1) == source_ambiguities[code]
+
+        is_ambiguous = count > 1
+
+        bridge_rows.append({
+            "asset_code": code,
+            "asset_match_count": count,
+            "resolved_asset_identity": (
+                candidates[0] if count == 1 else None
+            ),
+            "candidate_asset_identities": candidates,
+            "resolution_status": (
+                "AMBIGUOUS" if is_ambiguous else "UNIQUE"
+            ),
+            "is_ambiguous": is_ambiguous,
+            "is_placeholder": bool(
+                placeholder_by_code[code]
+            ),
+        })
+
+    ambiguous = [
+        row for row in bridge_rows
+        if row["is_ambiguous"]
+    ]
+
+    assert len(ambiguous) == 1
+    assert ambiguous[0]["asset_code"] == "B223PA"
+    assert ambiguous[0]["asset_match_count"] == 2
+    assert ambiguous[0]["resolved_asset_identity"] is None
+    assert (
+        ambiguous[0]["candidate_asset_identities"]
+        == [5514, 6133]
+    )
+
+    assert sum(
+        row["asset_match_count"] for row in bridge_rows
+    ) == EXPECTED_ASSET_ROWS
+
+    print("Source asset records:", f"{total_assets:,}")
+    print("Distinct asset codes:", f"{len(bridge_rows):,}")
+    print("Ambiguous codes:", len(ambiguous))
+    print("B223PA candidates: [5514, 6133]")
+
+    # Publish only after verifying the in-memory bridge.
+    STAGING_DIR.mkdir(parents=True, exist_ok=False)
+
+    table = pa.Table.from_pylist(
+        bridge_rows,
+        schema=GOLD_SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        str(STAGING_FILE),
+        compression="snappy",
+    )
+
+    del table
+    gc.collect()
+
+    with pq.ParquetFile(str(STAGING_FILE)) as reader:
+        assert (
+            reader.metadata.num_rows
+            == EXPECTED_BRIDGE_ROWS
+        )
+        assert reader.schema_arrow.equals(
+            GOLD_SCHEMA,
+            check_metadata=False,
+        )
+
+        verified_rows = 0
+        seen_codes = set()
+        ambiguous_count = 0
+
+        for batch in reader.iter_batches(
+            batch_size=BATCH_SIZE
+        ):
+            for row in batch.to_pylist():
+                verified_rows += 1
+                code = row["asset_code"]
+
+                assert code not in seen_codes
+                seen_codes.add(code)
+
+                candidates = row[
+                    "candidate_asset_identities"
+                ]
+
+                assert len(candidates) == (
+                    row["asset_match_count"]
+                )
+
+                if row["is_ambiguous"]:
+                    ambiguous_count += 1
+                    assert (
+                        row["resolved_asset_identity"]
+                        is None
+                    )
+                else:
+                    assert (
+                        row["resolved_asset_identity"]
+                        == candidates[0]
+                    )
+
+        assert verified_rows == EXPECTED_BRIDGE_ROWS
+        assert ambiguous_count == 1
+
+    gc.collect()
+
+    if FINAL_DIR.exists():
+        raise FileExistsError(
+            "Final bridge directory appeared during build"
+        )
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    assert FINAL_FILE.is_file()
+
+    manifest_data = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "bridge_asset_code",
+        "status": "COMPLETED",
+        "source": SOURCE.relative_to(ROOT).as_posix(),
+        "output": FINAL_FILE.relative_to(ROOT).as_posix(),
+        "rows": EXPECTED_BRIDGE_ROWS,
+        "columns": len(GOLD_SCHEMA),
+        "source_asset_rows": EXPECTED_ASSET_ROWS,
+        "unique_codes": EXPECTED_BRIDGE_ROWS - 1,
+        "ambiguous_codes": 1,
+        "ambiguous_code": "B223PA",
+        "candidate_asset_identities": [5514, 6133],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True, exist_ok=True
+    )
+
+    with MANIFEST.open(
+        "x", encoding="utf-8"
+    ) as handle:
+        json.dump(
+            manifest_data,
+            handle,
+            indent=2,
+        )
+
+    print("\nGOLD BRIDGE SUMMARY")
+    print("Bridge rows:", f"{verified_rows:,}")
+    print("Gold columns:", len(GOLD_SCHEMA))
+    print("Ambiguous codes:", ambiguous_count)
+    print("Unique asset codes:", f"{verified_rows - 1:,}")
+    print("Validation: PASS")
+    print("GOLD ASSET BRIDGE BUILD: SUCCESS")
+
+    return manifest_data
+
+
+def create_gold_asset_bridge_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_asset_bridge,
+            inputs=None,
+            outputs="gold_asset_bridge_manifest",
+            name="build_gold_asset_bridge",
+            tags=["gold", "assets", "bridge"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_asset_bridge_manifest": MemoryDataset()
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_gold_asset_bridge_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load(
+        "gold_asset_bridge_manifest"
+    )
+
+    assert result["status"] == "COMPLETED"
+
+    print("KEDRO GOLD ASSET BRIDGE PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_dim_date.py
+================================================================================
+"""
+AssetFusion360 - Step 8.2
+Conformed calendar dimension from Gold fact dates.
+
+Creates a continuous daily calendar.
+Does not change any existing Gold dataset.
+"""
+
+import json
+from datetime import timedelta, datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.compute as pc
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+FINAL = GOLD / "dim_date"
+STAGING = GOLD / "_staging_dim_date"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "dim_date_manifest.json"
+)
+
+SOURCES = {
+    "fact_workorders": ("workorder_date", 447, 2_231_535),
+    "fact_labor": ("labor_date", 647, 3_230_423),
+    "fact_transactions": ("transaction_date", 152, 755_122),
+    "fact_transaction_details": ("detail_date", 461, 2_301_927),
+}
+
+SCHEMA = pa.schema([
+    pa.field("date_key", pa.int32(), nullable=False),
+    pa.field("calendar_date", pa.date32(), nullable=False),
+    pa.field("year", pa.int16(), nullable=False),
+    pa.field("quarter", pa.int8(), nullable=False),
+    pa.field("month", pa.int8(), nullable=False),
+    pa.field("month_name", pa.string(), nullable=False),
+    pa.field("year_month", pa.string(), nullable=False),
+    pa.field("day_of_month", pa.int8(), nullable=False),
+    pa.field("day_of_week", pa.int8(), nullable=False),
+    pa.field("day_name", pa.string(), nullable=False),
+    pa.field("iso_week", pa.int8(), nullable=False),
+    pa.field("is_weekend", pa.bool_(), nullable=False),
+])
+
+
+def check_outputs():
+    for path in (FINAL, STAGING, MANIFEST):
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+def collect_date_coverage():
+    observed = set()
+    source_stats = {}
+
+    for table, (column, expected_files, expected_rows) in (
+        SOURCES.items()
+    ):
+        files = sorted((GOLD / table).glob("*.parquet"))
+
+        assert len(files) == expected_files, (
+            f"Unexpected file count: {table}"
+        )
+
+        reference = pq.read_schema(files[0])
+        assert column in reference.names
+
+        assert pa.types.is_timestamp(
+            reference.field(column).type
+        ), f"Expected timestamp: {table}.{column}"
+
+        rows = 0
+        missing = 0
+
+        for path in files:
+            assert pq.read_schema(path).equals(
+                reference, check_metadata=False
+            )
+
+            with pq.ParquetFile(str(path)) as reader:
+                for batch in reader.iter_batches(
+                    batch_size=50000,
+                    columns=[column],
+                ):
+                    rows += batch.num_rows
+
+                    dates = pc.cast(
+                        batch.column(0),
+                        pa.date32(),
+                    )
+
+                    missing += dates.null_count
+
+                    observed.update(
+                        value
+                        for value in pc.unique(dates).to_pylist()
+                        if value is not None
+                    )
+
+        assert rows == expected_rows
+
+        source_stats[table] = {
+            "rows": rows,
+            "missing_dates": missing,
+        }
+
+        print(
+            f"{table}: {rows:,} rows, "
+            f"{missing:,} missing dates",
+            flush=True,
+        )
+
+    assert observed, "No usable source dates"
+
+    return observed, source_stats
+
+
+def make_records(first, last):
+    records = []
+    current = first
+
+    while current <= last:
+        iso_weekday = current.isoweekday()
+
+        records.append({
+            "date_key": int(current.strftime("%Y%m%d")),
+            "calendar_date": current,
+            "year": current.year,
+            "quarter": (current.month - 1) // 3 + 1,
+            "month": current.month,
+            "month_name": current.strftime("%B"),
+            "year_month": current.strftime("%Y-%m"),
+            "day_of_month": current.day,
+            "day_of_week": iso_weekday,
+            "day_name": current.strftime("%A"),
+            "iso_week": current.isocalendar().week,
+            "is_weekend": iso_weekday >= 6,
+        })
+
+        current += timedelta(days=1)
+
+    return records
+
+
+def build_dim_date():
+    print("=" * 68)
+    print("STEP 8.2 - BUILD DIM_DATE")
+    print("=" * 68)
+
+    check_outputs()
+
+    observed, source_stats = collect_date_coverage()
+
+    first = min(observed)
+    last = max(observed)
+
+    records = make_records(first, last)
+
+    assert len(records) == (last - first).days + 1
+    assert len(records) >= len(observed)
+
+    date_keys = {r["date_key"] for r in records}
+    calendar_dates = {r["calendar_date"] for r in records}
+
+    assert len(date_keys) == len(records)
+    assert len(calendar_dates) == len(records)
+    assert observed.issubset(calendar_dates)
+
+    print("\nCALENDAR VALIDATION")
+    print("First date:", first)
+    print("Last date:", last)
+    print("Calendar rows:", len(records))
+    print("Observed dates covered:", len(observed))
+    print("Unique date keys: PASS")
+    print("Continuous calendar: PASS")
+
+    STAGING.mkdir(parents=True, exist_ok=False)
+    staged_file = STAGING / "part-00000.parquet"
+
+    table = pa.Table.from_pylist(
+        records,
+        schema=SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        staged_file,
+        compression="snappy",
+    )
+
+    with pq.ParquetFile(str(staged_file)) as reader:
+        assert reader.metadata.num_rows == len(records)
+        assert reader.schema_arrow.equals(
+            SCHEMA,
+            check_metadata=False,
+        )
+
+        staged = reader.read().to_pylist()
+
+    assert staged == records
+
+    print("\nSTAGED DIM_DATE VALIDATION: PASS")
+
+    if FINAL.exists():
+        raise FileExistsError(FINAL)
+
+    STAGING.rename(FINAL)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "dim_date",
+        "status": "COMPLETED",
+        "rows": len(records),
+        "columns": len(SCHEMA),
+        "parquet_files": 1,
+        "first_date": first.isoformat(),
+        "last_date": last.isoformat(),
+        "observed_dates": len(observed),
+        "source_stats": source_stats,
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open("x", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nGOLD DIM_DATE: SUCCESS")
+    return manifest
+
+
+def create_dim_date_pipeline():
+    return pipeline([
+        node(
+            func=build_dim_date,
+            inputs=None,
+            outputs="dim_date_manifest",
+            name="build_dim_date",
+            tags=["gold", "dimension", "date"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "dim_date_manifest": MemoryDataset()
+    })
+
+    SequentialRunner().run(
+        create_dim_date_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load("dim_date_manifest")
+    assert result["status"] == "COMPLETED"
+
+    print("KEDRO DIM_DATE PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_dim_detail_type.py
+================================================================================
+"""
+AssetFusion360 - Detail Type Dimension
+
+Source: Gold fact_transaction_details
+Output: Gold dim_detail_type
+
+Preserves original detail type values.
+Creates an explicit missing-value member if needed.
+"""
+
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+import json
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+SOURCE = GOLD / "fact_transaction_details"
+FINAL = GOLD / "dim_detail_type"
+STAGING = GOLD / "_staging_dim_detail_type"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "dim_detail_type_manifest.json"
+)
+
+EXPECTED_ROWS = 2_301_927
+EXPECTED_FILES = 461
+
+MISSING_LABEL = "<MISSING_DETAIL_TYPE>"
+
+SCHEMA = pa.schema([
+    pa.field("detail_type_key", pa.int32(), nullable=False),
+    pa.field("detail_type", pa.string(), nullable=False),
+    pa.field("is_missing_type", pa.bool_(), nullable=False),
+    pa.field("source_detail_count", pa.int64(), nullable=False),
+])
+
+
+def build_dimension():
+    print("=" * 68)
+    print("STEP 8.2H - BUILD DIM_DETAIL_TYPE")
+    print("=" * 68)
+
+    for path in [FINAL, STAGING, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output preserved: {path}"
+            )
+
+    files = sorted(SOURCE.glob("*.parquet"))
+    assert len(files) == EXPECTED_FILES
+
+    counts = Counter()
+
+    for index, path in enumerate(files, 1):
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=10000,
+                columns=["detail_type"],
+            ):
+                counts.update(batch.column(0).to_pylist())
+
+        if index % 100 == 0 or index == len(files):
+            print(
+                f"Processed files: {index}/{len(files)}",
+                flush=True,
+            )
+
+    assert sum(counts.values()) == EXPECTED_ROWS
+
+    non_null = [
+        value for value in counts
+        if value is not None
+    ]
+
+    assert all(isinstance(v, str) for v in non_null)
+    assert MISSING_LABEL not in non_null
+
+    records = []
+
+    if counts[None] > 0:
+        records.append({
+            "detail_type_key": 0,
+            "detail_type": MISSING_LABEL,
+            "is_missing_type": True,
+            "source_detail_count": counts[None],
+        })
+
+    for key, detail_type in enumerate(sorted(non_null), 1):
+        records.append({
+            "detail_type_key": key,
+            "detail_type": detail_type,
+            "is_missing_type": False,
+            "source_detail_count": counts[detail_type],
+        })
+
+    assert records, "No detail types found"
+
+    assert sum(
+        row["source_detail_count"]
+        for row in records
+    ) == EXPECTED_ROWS
+
+    assert len({
+        row["detail_type_key"] for row in records
+    }) == len(records)
+
+    assert len({
+        row["detail_type"] for row in records
+    }) == len(records)
+
+    print("\nDETAIL TYPE DISTRIBUTION")
+
+    for record in records:
+        print(
+            f"{record['detail_type']}: "
+            f"{record['source_detail_count']:,}"
+        )
+
+    STAGING.mkdir(parents=True, exist_ok=False)
+
+    staged_file = STAGING / "part-00000.parquet"
+
+    table = pa.Table.from_pylist(
+        records,
+        schema=SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        staged_file,
+        compression="snappy",
+    )
+
+    with pq.ParquetFile(str(staged_file)) as reader:
+        assert reader.metadata.num_rows == len(records)
+
+        assert reader.schema_arrow.equals(
+            SCHEMA,
+            check_metadata=False
+        )
+
+        verified = reader.read().to_pylist()
+
+    assert verified == records
+
+    print("\nSTAGED DIMENSION VALIDATION: PASS")
+
+    if FINAL.exists():
+        raise FileExistsError(FINAL)
+
+    STAGING.rename(FINAL)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "dim_detail_type",
+        "status": "COMPLETED",
+        "rows": len(records),
+        "columns": len(SCHEMA),
+        "parquet_files": 1,
+        "source_detail_rows": EXPECTED_ROWS,
+        "missing_detail_types": counts[None],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open("x", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nDIM_DETAIL_TYPE")
+    print("Dimension rows:", len(records))
+    print("Missing detail types:", counts[None])
+    print("Unique dimension keys: PASS")
+    print("Source-to-dimension reconciliation: PASS")
+    print("Published dimension: PASS")
+
+    print("\nSTEP 8.2H DIM_DETAIL_TYPE: PASS")
+
+
+if __name__ == "__main__":
+    build_dimension()
+
+
+================================================================================
+SOURCE FILE: gold_dim_part.py
+================================================================================
+"""
+AssetFusion360 - Step 8.2L
+Gold Part Dimension
+
+Source: fact_transaction_details
+Target: dim_part
+
+One row per unique part code.
+Preserves part identities and source attributes.
+Includes a missing-part reporting member.
+"""
+
+import json
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+SOURCE = GOLD / "fact_transaction_details"
+FINAL = GOLD / "dim_part"
+STAGING = GOLD / "_staging_dim_part"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "dim_part_manifest.json"
+)
+
+EXPECTED_ROWS = 2_301_927
+EXPECTED_FILES = 461
+EXPECTED_PARTS = 14_422
+EXPECTED_MISSING = 27_891
+
+MISSING_LABEL = "<MISSING_PART_CODE>"
+
+FIELDS = [
+    "part_code",
+    "part_identity",
+    "part_description",
+    "part_class",
+    "part_uom",
+]
+
+SCHEMA = pa.schema([
+    pa.field("part_key", pa.int32(), nullable=False),
+    pa.field("part_code", pa.string(), nullable=False),
+    pa.field("part_identity", pa.int64()),
+    pa.field("part_description", pa.string()),
+    pa.field("part_class", pa.string()),
+    pa.field("part_uom", pa.string()),
+    pa.field("is_missing_part", pa.bool_(), nullable=False),
+    pa.field("source_detail_count", pa.int64(), nullable=False),
+])
+
+
+def check_outputs():
+    assert SOURCE.is_dir(), "Source Gold table missing"
+
+    for path in [FINAL, STAGING, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+def collect_parts():
+    files = sorted(SOURCE.glob("*.parquet"))
+    assert len(files) == EXPECTED_FILES
+
+    reference_schema = pq.read_schema(files[0])
+
+    for field in FIELDS:
+        assert field in reference_schema.names
+
+    attributes = {}
+    identity_to_code = {}
+    counts = Counter()
+
+    total_rows = 0
+    missing_codes = 0
+    missing_identities = 0
+    missing_pairs = 0
+
+    for index, path in enumerate(files, 1):
+        assert pq.read_schema(path).equals(
+            reference_schema,
+            check_metadata=False
+        )
+
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=10000,
+                columns=FIELDS,
+            ):
+                for row in batch.to_pylist():
+                    total_rows += 1
+
+                    code = row["part_code"]
+                    identity = row["part_identity"]
+
+                    if code is None:
+                        missing_codes += 1
+
+                    if identity is None:
+                        missing_identities += 1
+
+                    if code is None and identity is None:
+                        missing_pairs += 1
+
+                    # A complete part relationship requires
+                    # both code and source identity.
+                    if code is None or identity is None:
+                        continue
+
+                    attrs = (
+                        identity,
+                        row["part_description"],
+                        row["part_class"],
+                        row["part_uom"],
+                    )
+
+                    if code in attributes:
+                        assert attributes[code] == attrs, (
+                            f"Conflicting attributes: {code}"
+                        )
+                    else:
+                        attributes[code] = attrs
+
+                    if identity in identity_to_code:
+                        assert identity_to_code[identity] == code, (
+                            f"Identity/code conflict: {identity}"
+                        )
+                    else:
+                        identity_to_code[identity] = code
+
+                    counts[code] += 1
+
+        if index % 100 == 0 or index == len(files):
+            print(
+                f"Processed files: {index}/{len(files)}",
+                flush=True,
+            )
+
+    assert total_rows == EXPECTED_ROWS
+    assert missing_codes == EXPECTED_MISSING
+    assert missing_identities == EXPECTED_MISSING
+
+    # Confirm missing codes and identities occur
+    # together rather than on separate records.
+    assert missing_pairs == EXPECTED_MISSING, (
+        "Partial part references found; review required"
+    )
+
+    assert len(attributes) == EXPECTED_PARTS
+    assert len(identity_to_code) == EXPECTED_PARTS
+
+    assert sum(counts.values()) == (
+        EXPECTED_ROWS - EXPECTED_MISSING
+    )
+
+    assert MISSING_LABEL not in attributes
+
+    print("\nSOURCE VALIDATION")
+    print("Source detail records:", f"{total_rows:,}")
+    print("Distinct valid parts:", len(attributes))
+    print("Missing part references:", missing_pairs)
+    print("Attribute consistency: PASS")
+    print("Part identity consistency: PASS")
+
+    return attributes, counts, missing_pairs
+
+
+def build_dim_part():
+    print("=" * 68)
+    print("STEP 8.2L - BUILD DIM_PART")
+    print("=" * 68)
+
+    check_outputs()
+
+    attributes, counts, missing_count = collect_parts()
+
+    records = [{
+        "part_key": 0,
+        "part_code": MISSING_LABEL,
+        "part_identity": None,
+        "part_description": "Missing part reference",
+        "part_class": None,
+        "part_uom": None,
+        "is_missing_part": True,
+        "source_detail_count": missing_count,
+    }]
+
+    for key, code in enumerate(sorted(attributes), 1):
+        identity, description, part_class, uom = (
+            attributes[code]
+        )
+
+        records.append({
+            "part_key": key,
+            "part_code": code,
+            "part_identity": identity,
+            "part_description": description,
+            "part_class": part_class,
+            "part_uom": uom,
+            "is_missing_part": False,
+            "source_detail_count": counts[code],
+        })
+
+    assert len(records) == EXPECTED_PARTS + 1
+
+    assert len({
+        row["part_key"] for row in records
+    }) == len(records)
+
+    assert len({
+        row["part_code"] for row in records
+    }) == len(records)
+
+    assert sum(
+        row["source_detail_count"] for row in records
+    ) == EXPECTED_ROWS
+
+    print("\nDIMENSION VALIDATION")
+    print("Dimension rows:", len(records))
+    print("Valid parts:", EXPECTED_PARTS)
+    print("Missing-part member:", 1)
+    print("Unique surrogate keys: PASS")
+    print("Unique part codes: PASS")
+    print("Source-to-dimension reconciliation: PASS")
+
+    STAGING.mkdir(parents=True, exist_ok=False)
+
+    staged_file = STAGING / "part-00000.parquet"
+
+    table = pa.Table.from_pylist(
+        records,
+        schema=SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        staged_file,
+        compression="snappy",
+    )
+
+    with pq.ParquetFile(str(staged_file)) as reader:
+        assert reader.metadata.num_rows == len(records)
+
+        assert reader.schema_arrow.equals(
+            SCHEMA,
+            check_metadata=False
+        )
+
+        verified = reader.read().to_pylist()
+
+    assert verified == records
+
+    print("Staged dimension validation: PASS")
+
+    if FINAL.exists():
+        raise FileExistsError(FINAL)
+
+    STAGING.rename(FINAL)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "dim_part",
+        "status": "COMPLETED",
+        "rows": len(records),
+        "columns": len(SCHEMA),
+        "parquet_files": 1,
+        "source_detail_rows": EXPECTED_ROWS,
+        "distinct_parts": EXPECTED_PARTS,
+        "missing_part_rows": missing_count,
+        "attribute_conflicts": 0,
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open(
+        "x", encoding="utf-8"
+    ) as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nGOLD DIM_PART: SUCCESS")
+    print("STEP 8.2L DIM_PART: PASS")
+
+
+if __name__ == "__main__":
+    build_dim_part()
+
+
+================================================================================
+SOURCE FILE: gold_dim_transaction_status.py
+================================================================================
+"""
+AssetFusion360 - Transaction Status Dimension
+
+Source: Gold fact_transactions
+Output: Gold dim_transaction_status
+
+Preserves original transaction status values.
+Includes a missing-value member when necessary.
+"""
+
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+import json
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+SOURCE = GOLD / "fact_transactions"
+FINAL = GOLD / "dim_transaction_status"
+STAGING = GOLD / "_staging_dim_transaction_status"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "dim_transaction_status_manifest.json"
+)
+
+EXPECTED_ROWS = 755_122
+EXPECTED_FILES = 152
+MISSING_LABEL = "<MISSING_TRANSACTION_STATUS>"
+
+SCHEMA = pa.schema([
+    pa.field("transaction_status_key", pa.int32(), nullable=False),
+    pa.field("transaction_status", pa.string(), nullable=False),
+    pa.field("is_missing_status", pa.bool_(), nullable=False),
+    pa.field("source_transaction_count", pa.int64(), nullable=False),
+])
+
+
+def build_dimension():
+    print("=" * 68)
+    print("STEP 8.2G - BUILD DIM_TRANSACTION_STATUS")
+    print("=" * 68)
+
+    for path in [FINAL, STAGING, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output preserved: {path}"
+            )
+
+    files = sorted(SOURCE.glob("*.parquet"))
+    assert len(files) == EXPECTED_FILES
+
+    counts = Counter()
+
+    for path in files:
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=10000,
+                columns=["transaction_status"],
+            ):
+                counts.update(
+                    batch.column(0).to_pylist()
+                )
+
+    assert sum(counts.values()) == EXPECTED_ROWS
+
+    non_null = [
+        value for value in counts
+        if value is not None
+    ]
+
+    assert all(isinstance(v, str) for v in non_null)
+    assert MISSING_LABEL not in non_null
+
+    records = []
+
+    if counts[None] > 0:
+        records.append({
+            "transaction_status_key": 0,
+            "transaction_status": MISSING_LABEL,
+            "is_missing_status": True,
+            "source_transaction_count": counts[None],
+        })
+
+    for key, status in enumerate(sorted(non_null), 1):
+        records.append({
+            "transaction_status_key": key,
+            "transaction_status": status,
+            "is_missing_status": False,
+            "source_transaction_count": counts[status],
+        })
+
+    assert records, "No transaction statuses found"
+
+    assert sum(
+        r["source_transaction_count"] for r in records
+    ) == EXPECTED_ROWS
+
+    assert len({
+        r["transaction_status_key"] for r in records
+    }) == len(records)
+
+    assert len({
+        r["transaction_status"] for r in records
+    }) == len(records)
+
+    print("\nTRANSACTION STATUS DISTRIBUTION")
+    for record in records:
+        print(
+            f"{record['transaction_status']}: "
+            f"{record['source_transaction_count']:,}"
+        )
+
+    STAGING.mkdir(parents=True, exist_ok=False)
+
+    staged_file = STAGING / "part-00000.parquet"
+
+    table = pa.Table.from_pylist(
+        records,
+        schema=SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        staged_file,
+        compression="snappy",
+    )
+
+    with pq.ParquetFile(str(staged_file)) as reader:
+        assert reader.metadata.num_rows == len(records)
+
+        assert reader.schema_arrow.equals(
+            SCHEMA,
+            check_metadata=False
+        )
+
+        verified = reader.read().to_pylist()
+
+    assert verified == records
+
+    print("\nSTAGED VALIDATION: PASS")
+
+    if FINAL.exists():
+        raise FileExistsError(FINAL)
+
+    STAGING.rename(FINAL)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "dim_transaction_status",
+        "status": "COMPLETED",
+        "rows": len(records),
+        "columns": len(SCHEMA),
+        "parquet_files": 1,
+        "source_transactions": EXPECTED_ROWS,
+        "missing_transaction_statuses": counts[None],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open("x", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+    print("\nDIM_TRANSACTION_STATUS")
+    print("Dimension rows:", len(records))
+    print("Missing transaction statuses:", counts[None])
+    print("Unique dimension keys: PASS")
+    print("Source-to-dimension reconciliation: PASS")
+    print("Published dimension: PASS")
+
+    print("\nSTEP 8.2G DIM_TRANSACTION_STATUS: PASS")
+
+
+if __name__ == "__main__":
+    build_dimension()
+
+
+================================================================================
+SOURCE FILE: gold_dim_transaction_type.py
+================================================================================
+"""
+AssetFusion360 - Transaction Type Dimension
+
+Source: Gold fact_transactions
+Output: Gold dim_transaction_type
+
+One row per distinct transaction type.
+Preserves original transaction type values.
+"""
+
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+import json
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+SOURCE = GOLD / "fact_transactions"
+FINAL = GOLD / "dim_transaction_type"
+STAGING = GOLD / "_staging_dim_transaction_type"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "dim_transaction_type_manifest.json"
+)
+
+EXPECTED_ROWS = 755_122
+EXPECTED_FILES = 152
+MISSING_LABEL = "<MISSING_TRANSACTION_TYPE>"
+
+SCHEMA = pa.schema([
+    pa.field("transaction_type_key", pa.int32(), nullable=False),
+    pa.field("transaction_type", pa.string(), nullable=False),
+    pa.field("is_missing_type", pa.bool_(), nullable=False),
+    pa.field("source_transaction_count", pa.int64(), nullable=False),
+])
+
+
+def build_dimension():
+    print("=" * 68)
+    print("STEP 8.2F - BUILD DIM_TRANSACTION_TYPE")
+    print("=" * 68)
+
+    for path in [FINAL, STAGING, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output preserved: {path}"
+            )
+
+    files = sorted(SOURCE.glob("*.parquet"))
+    assert len(files) == EXPECTED_FILES
+
+    counts = Counter()
+
+    for path in files:
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=10000,
+                columns=["transaction_type"],
+            ):
+                counts.update(batch.column(0).to_pylist())
+
+    assert sum(counts.values()) == EXPECTED_ROWS
+
+    non_null = [
+        value for value in counts
+        if value is not None
+    ]
+
+    assert all(isinstance(v, str) for v in non_null)
+    assert MISSING_LABEL not in non_null
+
+    records = []
+
+    if counts[None] > 0:
+        records.append({
+            "transaction_type_key": 0,
+            "transaction_type": MISSING_LABEL,
+            "is_missing_type": True,
+            "source_transaction_count": counts[None],
+        })
+
+    for key, kind in enumerate(sorted(non_null), 1):
+        records.append({
+            "transaction_type_key": key,
+            "transaction_type": kind,
+            "is_missing_type": False,
+            "source_transaction_count": counts[kind],
+        })
+
+    assert sum(
+        r["source_transaction_count"] for r in records
+    ) == EXPECTED_ROWS
+
+    assert len({
+        r["transaction_type_key"] for r in records
+    }) == len(records)
+
+    assert len({
+        r["transaction_type"] for r in records
+    }) == len(records)
+
+    print("\nTRANSACTION TYPE DISTRIBUTION")
+    for record in records:
+        print(
+            f"{record['transaction_type']}: "
+            f"{record['source_transaction_count']:,}"
+        )
+
+    STAGING.mkdir(parents=True, exist_ok=False)
+
+    staged_file = STAGING / "part-00000.parquet"
+
+    table = pa.Table.from_pylist(
+        records,
+        schema=SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        staged_file,
+        compression="snappy",
+    )
+
+    with pq.ParquetFile(str(staged_file)) as reader:
+        assert reader.metadata.num_rows == len(records)
+        assert reader.schema_arrow.equals(
+            SCHEMA,
+            check_metadata=False,
+        )
+
+        verified = reader.read().to_pylist()
+
+    assert verified == records
+
+    print("\nSTAGED VALIDATION: PASS")
+
+    if FINAL.exists():
+        raise FileExistsError(FINAL)
+
+    STAGING.rename(FINAL)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "dim_transaction_type",
+        "status": "COMPLETED",
+        "rows": len(records),
+        "columns": len(SCHEMA),
+        "parquet_files": 1,
+        "source_transactions": EXPECTED_ROWS,
+        "missing_transaction_types": counts[None],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open("x", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nDIM_TRANSACTION_TYPE")
+    print("Dimension rows:", len(records))
+    print("Missing transaction types:", counts[None])
+    print("Unique dimension keys: PASS")
+    print("Source-to-dimension reconciliation: PASS")
+    print("Published dimension: PASS")
+
+    print("\nSTEP 8.2F DIM_TRANSACTION_TYPE: PASS")
+
+
+if __name__ == "__main__":
+    build_dimension()
+
+
+================================================================================
+SOURCE FILE: gold_dim_workorder_priority.py
+================================================================================
+"""
+AssetFusion360 - Work Order Priority Dimension
+
+Source: Gold fact_workorders
+Output: Gold dim_workorder_priority
+
+Preserves distinct priority values and includes an
+explicit reporting member for missing priorities.
+"""
+
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+import json
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+SOURCE = GOLD / "fact_workorders"
+FINAL = GOLD / "dim_workorder_priority"
+STAGING = GOLD / "_staging_dim_workorder_priority"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "dim_workorder_priority_manifest.json"
+)
+
+EXPECTED_ROWS = 2_231_535
+EXPECTED_MISSING = 994_238
+MISSING_LABEL = "<MISSING_PRIORITY>"
+
+SCHEMA = pa.schema([
+    pa.field("workorder_priority_key", pa.int32(), nullable=False),
+    pa.field("workorder_priority", pa.string(), nullable=False),
+    pa.field("is_missing_priority", pa.bool_(), nullable=False),
+    pa.field("source_workorder_count", pa.int64(), nullable=False),
+])
+
+
+def build_dimension():
+    print("=" * 68)
+    print("STEP 8.2E - BUILD DIM_WORKORDER_PRIORITY")
+    print("=" * 68)
+
+    for path in [FINAL, STAGING, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output preserved: {path}"
+            )
+
+    files = sorted(SOURCE.glob("*.parquet"))
+    assert len(files) == 447
+
+    counts = Counter()
+
+    for path in files:
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=10000,
+                columns=["workorder_priority"],
+            ):
+                counts.update(
+                    batch.column(0).to_pylist()
+                )
+
+    assert sum(counts.values()) == EXPECTED_ROWS
+    assert counts[None] == EXPECTED_MISSING
+
+    # Original non-null codes must remain distinguishable
+    # from the artificial missing-value reporting member.
+    non_null = [value for value in counts if value is not None]
+
+    assert all(isinstance(value, str) for value in non_null), (
+        "Non-string priority found; review required"
+    )
+
+    assert MISSING_LABEL not in non_null, (
+        "Missing-value label conflicts with real priority"
+    )
+
+    records = [{
+        "workorder_priority_key": 0,
+        "workorder_priority": MISSING_LABEL,
+        "is_missing_priority": True,
+        "source_workorder_count": counts[None],
+    }]
+
+    for key, priority in enumerate(sorted(non_null), 1):
+        records.append({
+            "workorder_priority_key": key,
+            "workorder_priority": priority,
+            "is_missing_priority": False,
+            "source_workorder_count": counts[priority],
+        })
+
+    assert len(records) == len(non_null) + 1
+    assert sum(
+        row["source_workorder_count"] for row in records
+    ) == EXPECTED_ROWS
+
+    assert len({
+        row["workorder_priority_key"] for row in records
+    }) == len(records)
+
+    assert len({
+        row["workorder_priority"] for row in records
+    }) == len(records)
+
+    print("\nSOURCE RECONCILIATION")
+    print("Source work orders:", f"{EXPECTED_ROWS:,}")
+    print("Missing priorities:", f"{EXPECTED_MISSING:,}")
+    print("Distinct non-null priorities:", len(non_null))
+
+    print("\nPRIORITY DISTRIBUTION")
+    for row in records:
+        print(
+            f"{row['workorder_priority']}: "
+            f"{row['source_workorder_count']:,}"
+        )
+
+    STAGING.mkdir(parents=True, exist_ok=False)
+
+    staged_file = STAGING / "part-00000.parquet"
+
+    table = pa.Table.from_pylist(
+        records,
+        schema=SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        staged_file,
+        compression="snappy",
+    )
+
+    with pq.ParquetFile(str(staged_file)) as reader:
+        assert reader.metadata.num_rows == len(records)
+        assert reader.schema_arrow.equals(
+            SCHEMA,
+            check_metadata=False,
+        )
+
+        verified = reader.read().to_pylist()
+
+    assert verified == records
+
+    print("\nSTAGED DIMENSION VALIDATION: PASS")
+
+    if FINAL.exists():
+        raise FileExistsError(FINAL)
+
+    STAGING.rename(FINAL)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "dim_workorder_priority",
+        "status": "COMPLETED",
+        "rows": len(records),
+        "columns": len(SCHEMA),
+        "parquet_files": 1,
+        "source_workorders": EXPECTED_ROWS,
+        "missing_priority_rows": EXPECTED_MISSING,
+        "distinct_non_null_priorities": len(non_null),
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open("x", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nDIM_WORKORDER_PRIORITY")
+    print("Dimension rows:", len(records))
+    print("Source work orders:", f"{EXPECTED_ROWS:,}")
+    print("Missing-value member: PASS")
+    print("Unique dimension keys: PASS")
+    print("Source-to-dimension reconciliation: PASS")
+    print("Published dimension: PASS")
+
+    print("\nSTEP 8.2E DIM_WORKORDER_PRIORITY: PASS")
+
+
+if __name__ == "__main__":
+    build_dimension()
+
+
+================================================================================
+SOURCE FILE: gold_dim_workorder_type.py
+================================================================================
+"""
+AssetFusion360 - Work Order Type Dimension
+
+Source: Gold fact_workorders
+Output: Gold dim_workorder_type
+
+One row per distinct work-order type.
+"""
+
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+import json
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+SOURCE = GOLD / "fact_workorders"
+FINAL = GOLD / "dim_workorder_type"
+STAGING = GOLD / "_staging_dim_workorder_type"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "dim_workorder_type_manifest.json"
+)
+
+EXPECTED = {
+    "JOB": 1_848_051,
+    "IN": 108_258,
+    "PPM": 101_154,
+    "AA": 100_622,
+    "STAT": 43_219,
+    "MRC": 15_136,
+    "XA": 15_095,
+}
+
+SCHEMA = pa.schema([
+    pa.field("workorder_type_key", pa.int32(), nullable=False),
+    pa.field("workorder_type", pa.string(), nullable=False),
+    pa.field("source_workorder_count", pa.int64(), nullable=False),
+])
+
+
+def build_dimension():
+    print("=" * 65)
+    print("STEP 8.2D - BUILD DIM_WORKORDER_TYPE")
+    print("=" * 65)
+
+    for path in [FINAL, STAGING, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output preserved: {path}"
+            )
+
+    files = sorted(SOURCE.glob("*.parquet"))
+    assert len(files) == 447
+
+    counts = Counter()
+
+    for path in files:
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=10000,
+                columns=["workorder_type"],
+            ):
+                counts.update(
+                    batch.column(0).to_pylist()
+                )
+
+    assert dict(counts) == EXPECTED
+    assert sum(counts.values()) == 2_231_535
+
+    records = []
+
+    for key, code in enumerate(sorted(counts), 1):
+        records.append({
+            "workorder_type_key": key,
+            "workorder_type": code,
+            "source_workorder_count": counts[code],
+        })
+
+    assert len(records) == 7
+
+    STAGING.mkdir(parents=True, exist_ok=False)
+    staged = STAGING / "part-00000.parquet"
+
+    table = pa.Table.from_pylist(records, schema=SCHEMA)
+    pq.write_table(table, staged, compression="snappy")
+
+    verified = pq.read_table(staged).to_pylist()
+    assert verified == records
+
+    STAGING.rename(FINAL)
+
+    manifest = {
+        "table": "dim_workorder_type",
+        "status": "COMPLETED",
+        "rows": 7,
+        "columns": 3,
+        "source_workorders": 2_231_535,
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open("x", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+    print("\nDIM_WORKORDER_TYPE")
+    print("Dimension rows:", len(records))
+    print("Source work orders:", f"{sum(counts.values()):,}")
+    print("Unique work-order types: PASS")
+    print("Source-to-dimension reconciliation: PASS")
+    print("Published dimension: PASS")
+    print("\nSTEP 8.2D DIM_WORKORDER_TYPE: PASS")
+
+
+if __name__ == "__main__":
+    build_dimension()
+
+
+================================================================================
+SOURCE FILE: gold_fact_labor.py
+================================================================================
+"""
+AssetFusion360 Capstone
+Step 7.8 - Gold Labor Fact Table
+
+Source: Silver AMPS Labor
+Lookup: Gold fact_workorders
+Target: Gold fact_labor
+
+Rules:
+- One Gold row per Silver Labor row.
+- Preserve all 3,230,423 records.
+- Preserve unmatched work-order references.
+- Preserve negative and zero financial values.
+- Never modify Bronze, Silver, or existing Gold tables.
+- Validate staged output before publication.
+"""
+
+import gc
+import json
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+SILVER_DIR = (
+    ROOT / "data" / "03_silver_cleaned_data"
+    / "amps_labor"
+)
+
+GOLD_ROOT = ROOT / "data" / "04_gold_analytics"
+
+WORKORDER_DIR = GOLD_ROOT / "fact_workorders"
+
+FINAL_DIR = GOLD_ROOT / "fact_labor"
+STAGING_DIR = GOLD_ROOT / "_staging_fact_labor"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_fact_labor_manifest.json"
+)
+
+EXPECTED_ROWS = 3_230_423
+EXPECTED_FILES = 647
+EXPECTED_WORKORDERS = 2_231_535
+
+BATCH_SIZE = 10000
+
+
+# ============================================================
+# GOLD FACT SCHEMA
+# ============================================================
+
+GOLD_SCHEMA = pa.schema([
+    pa.field("labor_identity", pa.int64(), nullable=False),
+    pa.field("workorder_code", pa.string()),
+    pa.field("workorder_identity", pa.int64()),
+    pa.field("workorder_match_status", pa.string()),
+    pa.field("labor_date", pa.timestamp("us")),
+    pa.field("labor_activity", pa.string()),
+    pa.field("trade", pa.string()),
+    pa.field("occupation_type", pa.string()),
+    pa.field("labor_hours", pa.decimal128(20, 6)),
+    pa.field("labor_rate", pa.decimal128(20, 6)),
+    pa.field("labor_cost", pa.decimal128(20, 6)),
+    pa.field("correction_code", pa.string()),
+    pa.field("labor_description", pa.string()),
+    pa.field("labor_code", pa.string()),
+    pa.field("negative_hours_flag", pa.bool_()),
+    pa.field("negative_cost_flag", pa.bool_()),
+    pa.field("zero_rate_flag", pa.bool_()),
+    pa.field("silver_dq_issue", pa.bool_()),
+    pa.field("source_file", pa.string()),
+    pa.field("source_batch", pa.string()),
+])
+
+
+SOURCE_MAPPING = {
+    "labor_identity": "labor_identity_int",
+    "workorder_code": "boo_event",
+    "labor_date": "labor_date_ts",
+    "labor_activity": "boo_act",
+    "trade": "boo_trade",
+    "occupation_type": "boo_octype",
+    "labor_hours": "labor_hours_decimal",
+    "labor_rate": "labor_rate_decimal",
+    "labor_cost": "labor_cost_decimal",
+    "correction_code": "boo_correction",
+    "labor_description": "boo_desc",
+    "labor_code": "boo_code",
+    "negative_hours_flag": "dq_negative_labor_hours",
+    "negative_cost_flag": "dq_negative_labor_cost",
+    "zero_rate_flag": "dq_zero_labor_rate",
+    "silver_dq_issue": "dq_any_issue",
+    "source_file": "_bronze_source_file",
+    "source_batch": "_bronze_batch_id",
+}
+
+
+# ============================================================
+# OUTPUT PROTECTION
+# ============================================================
+
+def check_outputs():
+    if not SILVER_DIR.is_dir():
+        raise FileNotFoundError(SILVER_DIR)
+
+    if not WORKORDER_DIR.is_dir():
+        raise FileNotFoundError(WORKORDER_DIR)
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing artifact must be preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+# ============================================================
+# SOURCE SCHEMA VALIDATION
+# ============================================================
+
+def inspect_sources():
+    files = sorted(SILVER_DIR.glob("*.parquet"))
+
+    assert len(files) == EXPECTED_FILES, (
+        f"Unexpected Labor file count: {len(files)}"
+    )
+
+    reference_schema = pq.read_schema(files[0])
+    total_rows = 0
+
+    for path in files:
+        current_schema = pq.read_schema(path)
+
+        assert current_schema.equals(
+            reference_schema,
+            check_metadata=False,
+        ), f"Schema mismatch: {path.name}"
+
+        total_rows += pq.read_metadata(path).num_rows
+
+    assert total_rows == EXPECTED_ROWS
+    assert len(reference_schema) == 38
+
+    for gold_name, silver_name in SOURCE_MAPPING.items():
+        assert silver_name in reference_schema.names, (
+            f"Missing Silver field: {silver_name}"
+        )
+
+        source_type = reference_schema.field(
+            silver_name
+        ).type
+
+        gold_type = GOLD_SCHEMA.field(
+            gold_name
+        ).type
+
+        assert source_type.equals(gold_type), (
+            f"Type mismatch: {silver_name}: "
+            f"{source_type} != {gold_type}"
+        )
+
+    print("Silver Labor files:", len(files))
+    print("Silver Labor rows:", f"{total_rows:,}")
+    print("Silver Labor columns:", len(reference_schema))
+    print("Gold Labor columns:", len(GOLD_SCHEMA))
+    print("Labor source schema: PASS")
+
+    return files
+
+
+# ============================================================
+# LOAD WORK-ORDER BUSINESS KEY LOOKUP
+# ============================================================
+
+def load_workorder_lookup():
+    files = sorted(WORKORDER_DIR.glob("*.parquet"))
+
+    assert len(files) == 447
+
+    lookup = {}
+    total_rows = 0
+
+    for path in files:
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=BATCH_SIZE,
+                columns=[
+                    "workorder_code",
+                    "workorder_identity",
+                ],
+            ):
+                for row in batch.to_pylist():
+                    total_rows += 1
+
+                    code = row["workorder_code"]
+                    identity = row["workorder_identity"]
+
+                    assert code is not None
+                    assert identity is not None
+                    assert code not in lookup, (
+                        f"Duplicate work-order code: {code}"
+                    )
+
+                    lookup[code] = identity
+
+    assert total_rows == EXPECTED_WORKORDERS
+    assert len(lookup) == EXPECTED_WORKORDERS
+
+    print(
+        "Gold Work Order lookup:",
+        f"{len(lookup):,}"
+    )
+    print("Work Order business key uniqueness: PASS")
+
+    return lookup
+
+
+# ============================================================
+# TRANSFORM ONE SILVER LABOR BATCH
+# ============================================================
+
+def transform_batch(batch, workorder_lookup):
+    source = pa.Table.from_batches([batch])
+
+    references = source.column(
+        "boo_event"
+    ).to_pylist()
+
+    resolved_ids = []
+    statuses = []
+
+    for reference in references:
+        if reference is None or not str(reference).strip():
+            resolved_ids.append(None)
+            statuses.append("MISSING_REFERENCE")
+
+        elif reference in workorder_lookup:
+            resolved_ids.append(
+                workorder_lookup[reference]
+            )
+            statuses.append("MATCHED")
+
+        else:
+            resolved_ids.append(None)
+            statuses.append("UNMATCHED")
+
+    derived = {
+        "workorder_identity": pa.array(
+            resolved_ids,
+            type=pa.int64(),
+        ),
+        "workorder_match_status": pa.array(
+            statuses,
+            type=pa.string(),
+        ),
+    }
+
+    columns = []
+
+    for field in GOLD_SCHEMA:
+        name = field.name
+
+        if name in derived:
+            column = derived[name]
+        else:
+            column = source.column(
+                SOURCE_MAPPING[name]
+            )
+
+        columns.append(column)
+
+    result = pa.Table.from_arrays(
+        columns,
+        schema=GOLD_SCHEMA,
+    )
+
+    assert result.num_rows == batch.num_rows
+
+    return result
+
+
+# ============================================================
+# BUILD GOLD FACT_LABOR
+# ============================================================
+
+def build_gold_fact_labor():
+    print("=" * 68)
+    print("STEP 7.8 - BUILD GOLD FACT_LABOR")
+    print("=" * 68)
+
+    check_outputs()
+
+    silver_files = inspect_sources()
+    workorder_lookup = load_workorder_lookup()
+
+    # Only create staging after source validation.
+    STAGING_DIR.mkdir(
+        parents=True,
+        exist_ok=False,
+    )
+
+    counts = Counter()
+
+    for index, source_file in enumerate(silver_files):
+        target_file = (
+            STAGING_DIR / f"part-{index:05d}.parquet"
+        )
+
+        with pq.ParquetFile(str(source_file)) as reader:
+            with pq.ParquetWriter(
+                str(target_file),
+                GOLD_SCHEMA,
+                compression="snappy",
+            ) as writer:
+                for batch in reader.iter_batches(
+                    batch_size=BATCH_SIZE,
+                    columns=list(SOURCE_MAPPING.values()),
+                ):
+                    gold = transform_batch(
+                        batch,
+                        workorder_lookup,
+                    )
+
+                    writer.write_table(gold)
+
+                    counts["rows"] += gold.num_rows
+
+                    for status in gold.column(
+                        "workorder_match_status"
+                    ).to_pylist():
+                        counts[status] += 1
+
+                    for column, name in [
+                        ("negative_hours_flag", "negative_hours"),
+                        ("negative_cost_flag", "negative_cost"),
+                        ("zero_rate_flag", "zero_rate"),
+                        ("silver_dq_issue", "dq_issues"),
+                    ]:
+                        counts[name] += sum(
+                            value is True
+                            for value in gold.column(
+                                column
+                            ).to_pylist()
+                        )
+
+        if (
+            (index + 1) % 25 == 0
+            or index + 1 == EXPECTED_FILES
+        ):
+            print(
+                f"Files: {index + 1}/{EXPECTED_FILES}"
+                f" | Rows: {counts['rows']:,}",
+                flush=True,
+            )
+
+    # ========================================================
+    # VALIDATE BUSINESS COUNTS
+    # ========================================================
+
+    assert counts["rows"] == EXPECTED_ROWS
+
+    assert counts["MATCHED"] == 3_217_345
+    assert counts["UNMATCHED"] == 13_078
+    assert counts["MISSING_REFERENCE"] == 0
+
+    assert counts["negative_hours"] == 74_609
+    assert counts["negative_cost"] == 71_374
+    assert counts["zero_rate"] == 188_165
+
+    assert counts["dq_issues"] == 0
+
+    # ========================================================
+    # VALIDATE STAGED PARQUET
+    # ========================================================
+
+    staged_files = sorted(
+        STAGING_DIR.glob("*.parquet")
+    )
+
+    assert len(staged_files) == EXPECTED_FILES
+
+    verified_rows = 0
+
+    for path in staged_files:
+        assert pq.read_schema(path).equals(
+            GOLD_SCHEMA,
+            check_metadata=False,
+        ), f"Gold schema mismatch: {path.name}"
+
+        verified_rows += pq.read_metadata(
+            path
+        ).num_rows
+
+    assert verified_rows == EXPECTED_ROWS
+
+    print("\nSTAGED GOLD LABOR VALIDATION")
+    print("Labor rows:", f"{verified_rows:,}")
+    print("Parquet files:", len(staged_files))
+    print("Matched Work Orders:", f"{counts['MATCHED']:,}")
+    print("Unmatched Work Orders:", f"{counts['UNMATCHED']:,}")
+    print("Negative hours:", f"{counts['negative_hours']:,}")
+    print("Negative costs:", f"{counts['negative_cost']:,}")
+    print("Zero rates:", f"{counts['zero_rate']:,}")
+    print("Staged validation: PASS")
+
+    # ========================================================
+    # PUBLISH WITHOUT OVERWRITING
+    # ========================================================
+
+    gc.collect()
+
+    if FINAL_DIR.exists():
+        raise FileExistsError(FINAL_DIR)
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    # ========================================================
+    # WRITE COMPLETION MANIFEST
+    # ========================================================
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "fact_labor",
+        "status": "COMPLETED",
+        "source": SILVER_DIR.relative_to(ROOT).as_posix(),
+        "workorder_source": (
+            WORKORDER_DIR.relative_to(ROOT).as_posix()
+        ),
+        "output": FINAL_DIR.relative_to(ROOT).as_posix(),
+        "rows": verified_rows,
+        "columns": len(GOLD_SCHEMA),
+        "parquet_files": len(staged_files),
+        "matched_workorder_rows": counts["MATCHED"],
+        "unmatched_workorder_rows": counts["UNMATCHED"],
+        "missing_reference_rows": counts["MISSING_REFERENCE"],
+        "negative_hours_rows": counts["negative_hours"],
+        "negative_cost_rows": counts["negative_cost"],
+        "zero_rate_rows": counts["zero_rate"],
+        "silver_dq_issue_rows": counts["dq_issues"],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open(
+        "x",
+        encoding="utf-8",
+    ) as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nGOLD FACT_LABOR BUILD: SUCCESS")
+
+    return manifest
+
+
+# ============================================================
+# KEDRO PIPELINE
+# ============================================================
+
+def create_gold_fact_labor_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_fact_labor,
+            inputs=None,
+            outputs="gold_fact_labor_manifest",
+            name="build_gold_fact_labor",
+            tags=["gold", "labor", "fact"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_fact_labor_manifest": MemoryDataset()
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_gold_fact_labor_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load("gold_fact_labor_manifest")
+
+    assert result["status"] == "COMPLETED"
+
+    print("KEDRO GOLD FACT_LABOR PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_fact_transaction_details.py
+================================================================================
+"""
+AssetFusion360 Capstone
+Step 7.10 - Gold Transaction Details Fact Table
+
+Source: Silver AMPS Transaction Details
+References: Gold Transactions and Gold Work Orders
+
+Grain: One row per detail_identity_int
+Preserves all 2,301,927 original detail records.
+Never overwrites completed datasets.
+"""
+
+import gc
+import json
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+SILVER_DIR = (
+    ROOT / "data" / "03_silver_cleaned_data"
+    / "amps_transaction_details"
+)
+
+GOLD_ROOT = ROOT / "data" / "04_gold_analytics"
+
+TRANSACTION_DIR = GOLD_ROOT / "fact_transactions"
+WORKORDER_DIR = GOLD_ROOT / "fact_workorders"
+
+FINAL_DIR = GOLD_ROOT / "fact_transaction_details"
+STAGING_DIR = GOLD_ROOT / "_staging_fact_transaction_details"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_fact_transaction_details_manifest.json"
+)
+
+EXPECTED_ROWS = 2_301_927
+EXPECTED_FILES = 461
+BATCH_SIZE = 10000
+
+
+# ============================================================
+# 1. GOLD SCHEMA
+# ============================================================
+
+GOLD_SCHEMA = pa.schema([
+    pa.field("detail_identity", pa.int64(), nullable=False),
+    pa.field("transaction_code", pa.string()),
+    pa.field("transaction_identity", pa.int64()),
+    pa.field("transaction_match_status", pa.string()),
+    pa.field("workorder_code", pa.string()),
+    pa.field("workorder_identity", pa.int64()),
+    pa.field("workorder_match_status", pa.string()),
+    pa.field("transaction_line", pa.string()),
+    pa.field("detail_type", pa.string()),
+    pa.field("activity_code", pa.string()),
+    pa.field("detail_description", pa.string()),
+    pa.field("detail_date", pa.timestamp("us")),
+    pa.field("detail_created_at", pa.timestamp("us")),
+    pa.field("detail_updated_at", pa.timestamp("us")),
+    pa.field("part_code", pa.string()),
+    pa.field("part_identity", pa.int64()),
+    pa.field("part_description", pa.string()),
+    pa.field("part_class", pa.string()),
+    pa.field("part_uom", pa.string()),
+    pa.field("store_code", pa.string()),
+    pa.field("bin_code", pa.string()),
+    pa.field("quantity", pa.decimal128(20, 6)),
+    pa.field("unit_price", pa.decimal128(20, 6)),
+    pa.field("average_price", pa.decimal128(20, 6)),
+    pa.field("negative_quantity_flag", pa.bool_()),
+    pa.field("negative_price_flag", pa.bool_()),
+    pa.field("zero_quantity_flag", pa.bool_()),
+    pa.field("zero_price_flag", pa.bool_()),
+    pa.field("silver_dq_issue", pa.bool_()),
+    pa.field("source_file", pa.string()),
+    pa.field("source_batch", pa.string()),
+])
+
+
+# Gold column -> Silver column
+SOURCE_MAPPING = {
+    "detail_identity": "detail_identity_int",
+    "transaction_code": "trl_trans",
+    "workorder_code": "trl_event",
+    "transaction_line": "trl_line",
+    "detail_type": "trl_type",
+    "activity_code": "trl_act",
+    "detail_description": "trl_desc",
+    "detail_date": "detail_date_ts",
+    "detail_created_at": "detail_created_ts",
+    "detail_updated_at": "detail_updated_ts",
+    "part_code": "par_code",
+    "part_identity": "part_identity_int",
+    "part_description": "par_desc",
+    "part_class": "par_class",
+    "part_uom": "par_uom",
+    "store_code": "trl_store",
+    "bin_code": "trl_bin",
+    "quantity": "detail_quantity_decimal",
+    "unit_price": "detail_price_decimal",
+    "average_price": "detail_avgprice_decimal",
+    "negative_quantity_flag": "dq_negative_quantity",
+    "negative_price_flag": "dq_negative_price",
+    "zero_quantity_flag": "dq_zero_quantity",
+    "zero_price_flag": "dq_zero_price",
+    "silver_dq_issue": "dq_any_issue",
+    "source_file": "_bronze_source_file",
+    "source_batch": "_bronze_batch_id",
+}
+
+
+# ============================================================
+# 2. OUTPUT SAFETY
+# ============================================================
+
+def check_outputs():
+    for directory in [
+        SILVER_DIR,
+        TRANSACTION_DIR,
+        WORKORDER_DIR,
+    ]:
+        if not directory.is_dir():
+            raise FileNotFoundError(directory)
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing artifact must be preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+# ============================================================
+# 3. SOURCE SCHEMA CHECK
+# ============================================================
+
+def inspect_sources():
+    files = sorted(SILVER_DIR.glob("*.parquet"))
+
+    assert len(files) == EXPECTED_FILES
+
+    schema = pq.read_schema(files[0])
+    assert len(schema) == 68
+
+    total_rows = 0
+
+    for path in files:
+        current_schema = pq.read_schema(path)
+
+        assert current_schema.equals(
+            schema, check_metadata=False
+        ), f"Schema mismatch: {path.name}"
+
+        total_rows += pq.read_metadata(path).num_rows
+
+    assert total_rows == EXPECTED_ROWS
+
+    for gold_name, silver_name in SOURCE_MAPPING.items():
+        assert silver_name in schema.names, (
+            f"Missing Silver field: {silver_name}"
+        )
+
+        assert schema.field(silver_name).type.equals(
+            GOLD_SCHEMA.field(gold_name).type
+        ), f"Field type mismatch: {silver_name}"
+
+    print("Silver files:", len(files))
+    print("Silver rows:", f"{total_rows:,}")
+    print("Silver columns:", len(schema))
+    print("Gold columns:", len(GOLD_SCHEMA))
+    print("Source schema: PASS")
+
+    return files
+
+
+# ============================================================
+# 4. LOAD GOLD RELATIONSHIP LOOKUPS
+# ============================================================
+
+def load_lookup(directory, code_field, identity_field, count):
+    files = sorted(directory.glob("*.parquet"))
+    lookup = {}
+
+    for path in files:
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=BATCH_SIZE,
+                columns=[code_field, identity_field],
+            ):
+                data = batch.to_pydict()
+
+                for code, identity in zip(
+                    data[code_field],
+                    data[identity_field],
+                ):
+                    assert code is not None
+                    assert identity is not None
+                    assert code not in lookup
+
+                    lookup[code] = identity
+
+    assert len(lookup) == count
+    return lookup
+
+
+def load_references():
+    transactions = load_lookup(
+        TRANSACTION_DIR,
+        "transaction_code",
+        "transaction_identity",
+        755_122,
+    )
+
+    workorders = load_lookup(
+        WORKORDER_DIR,
+        "workorder_code",
+        "workorder_identity",
+        2_231_535,
+    )
+
+    print("Transaction lookup:", f"{len(transactions):,}")
+    print("Work Order lookup:", f"{len(workorders):,}")
+    print("Relationship lookup validation: PASS")
+
+    return transactions, workorders
+
+
+# ============================================================
+# 5. TRANSFORM A SILVER BATCH
+# ============================================================
+
+def resolve_codes(codes, lookup):
+    identities = []
+    statuses = []
+
+    for code in codes:
+        if code is None or not str(code).strip():
+            identities.append(None)
+            statuses.append("MISSING_REFERENCE")
+        elif code in lookup:
+            identities.append(lookup[code])
+            statuses.append("MATCHED")
+        else:
+            identities.append(None)
+            statuses.append("UNMATCHED")
+
+    return identities, statuses
+
+
+def transform_batch(batch, transactions, workorders):
+    source = pa.Table.from_batches([batch])
+
+    transaction_ids, transaction_statuses = resolve_codes(
+        source.column("trl_trans").to_pylist(),
+        transactions,
+    )
+
+    workorder_ids, workorder_statuses = resolve_codes(
+        source.column("trl_event").to_pylist(),
+        workorders,
+    )
+
+    derived = {
+        "transaction_identity": pa.array(
+            transaction_ids, type=pa.int64()
+        ),
+        "transaction_match_status": pa.array(
+            transaction_statuses, type=pa.string()
+        ),
+        "workorder_identity": pa.array(
+            workorder_ids, type=pa.int64()
+        ),
+        "workorder_match_status": pa.array(
+            workorder_statuses, type=pa.string()
+        ),
+    }
+
+    columns = []
+
+    for field in GOLD_SCHEMA:
+        if field.name in derived:
+            columns.append(derived[field.name])
+        else:
+            columns.append(
+                source.column(SOURCE_MAPPING[field.name])
+            )
+
+    result = pa.Table.from_arrays(
+        columns,
+        schema=GOLD_SCHEMA,
+    )
+
+    assert result.num_rows == batch.num_rows
+    return result
+
+
+# ============================================================
+# 6. BUILD GOLD FACT TRANSACTION DETAILS
+# ============================================================
+
+def build_gold_fact_transaction_details():
+    print("=" * 68)
+    print("STEP 7.10 - BUILD GOLD FACT_TRANSACTION_DETAILS")
+    print("=" * 68)
+
+    check_outputs()
+    files = inspect_sources()
+    transactions, workorders = load_references()
+
+    STAGING_DIR.mkdir(parents=True, exist_ok=False)
+
+    counts = Counter()
+    identities = set()
+
+    for index, source_path in enumerate(files):
+        target_path = (
+            STAGING_DIR / f"part-{index:05d}.parquet"
+        )
+
+        with pq.ParquetFile(str(source_path)) as reader:
+            with pq.ParquetWriter(
+                str(target_path),
+                GOLD_SCHEMA,
+                compression="snappy",
+            ) as writer:
+                for batch in reader.iter_batches(
+                    batch_size=BATCH_SIZE,
+                    columns=list(SOURCE_MAPPING.values()),
+                ):
+                    gold = transform_batch(
+                        batch, transactions, workorders
+                    )
+
+                    for identity in gold.column(
+                        "detail_identity"
+                    ).to_pylist():
+                        if identity is None or identity in identities:
+                            raise ValueError(
+                                f"Invalid detail identity: {identity}"
+                            )
+                        identities.add(identity)
+
+                    for column, prefix in [
+                        ("transaction_match_status", "transaction"),
+                        ("workorder_match_status", "workorder"),
+                    ]:
+                        counts.update(
+                            f"{prefix}_{status}"
+                            for status in gold.column(column).to_pylist()
+                        )
+
+                    for column, key in [
+                        ("negative_quantity_flag", "negative_qty"),
+                        ("negative_price_flag", "negative_price"),
+                        ("zero_quantity_flag", "zero_qty"),
+                        ("zero_price_flag", "zero_price"),
+                        ("silver_dq_issue", "dq_issue"),
+                    ]:
+                        counts[key] += sum(
+                            x is True
+                            for x in gold.column(column).to_pylist()
+                        )
+
+                    writer.write_table(gold)
+                    counts["rows"] += gold.num_rows
+
+        if (
+            (index + 1) % 25 == 0
+            or index + 1 == EXPECTED_FILES
+        ):
+            print(
+                f"Files: {index + 1}/{EXPECTED_FILES}"
+                f" | Rows: {counts['rows']:,}",
+                flush=True,
+            )
+
+    # Validate row counts and relationship outcomes.
+    assert counts["rows"] == EXPECTED_ROWS
+    assert len(identities) == EXPECTED_ROWS
+
+    expected = {
+        "transaction_MATCHED": 2_300_536,
+        "transaction_UNMATCHED": 1_391,
+        "transaction_MISSING_REFERENCE": 0,
+        "workorder_MATCHED": 809_009,
+        "workorder_UNMATCHED": 135,
+        "workorder_MISSING_REFERENCE": 1_492_783,
+        "negative_qty": 44_053,
+        "negative_price": 5_501,
+        "zero_qty": 164_449,
+        "zero_price": 61_515,
+        "dq_issue": 0,
+    }
+
+    for key, value in expected.items():
+        assert counts[key] == value, (
+            f"Validation failed: {key}: "
+            f"{counts[key]} != {value}"
+        )
+
+    staged_files = sorted(STAGING_DIR.glob("*.parquet"))
+    assert len(staged_files) == EXPECTED_FILES
+
+    verified_rows = 0
+
+    for path in staged_files:
+        assert pq.read_schema(path).equals(
+            GOLD_SCHEMA,
+            check_metadata=False,
+        )
+        verified_rows += pq.read_metadata(path).num_rows
+
+    assert verified_rows == EXPECTED_ROWS
+
+    print("\nSTAGED GOLD TRANSACTION DETAILS VALIDATION")
+    print("Records:", f"{verified_rows:,}")
+    print("Parquet files:", len(staged_files))
+    print("Unique identities:", f"{len(identities):,}")
+    print("Matched transactions:", f"{counts['transaction_MATCHED']:,}")
+    print("Unmatched transactions:", f"{counts['transaction_UNMATCHED']:,}")
+    print("Matched work orders:", f"{counts['workorder_MATCHED']:,}")
+    print("Unmatched work orders:", counts["workorder_UNMATCHED"])
+    print("Missing work-order refs:", f"{counts['workorder_MISSING_REFERENCE']:,}")
+    print("Staged validation: PASS")
+
+    gc.collect()
+
+    if FINAL_DIR.exists():
+        raise FileExistsError(FINAL_DIR)
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "fact_transaction_details",
+        "status": "COMPLETED",
+        "source": SILVER_DIR.relative_to(ROOT).as_posix(),
+        "output": FINAL_DIR.relative_to(ROOT).as_posix(),
+        "rows": verified_rows,
+        "columns": len(GOLD_SCHEMA),
+        "parquet_files": len(staged_files),
+        "unique_detail_identities": len(identities),
+        "matched_transaction_rows": counts["transaction_MATCHED"],
+        "unmatched_transaction_rows": counts["transaction_UNMATCHED"],
+        "missing_transaction_reference_rows": (
+            counts["transaction_MISSING_REFERENCE"]
+        ),
+        "matched_workorder_rows": counts["workorder_MATCHED"],
+        "unmatched_workorder_rows": counts["workorder_UNMATCHED"],
+        "missing_workorder_reference_rows": (
+            counts["workorder_MISSING_REFERENCE"]
+        ),
+        "negative_quantity_rows": counts["negative_qty"],
+        "negative_price_rows": counts["negative_price"],
+        "zero_quantity_rows": counts["zero_qty"],
+        "zero_price_rows": counts["zero_price"],
+        "silver_dq_issue_rows": counts["dq_issue"],
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+
+    with MANIFEST.open("x", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nGOLD FACT_TRANSACTION_DETAILS BUILD: SUCCESS")
+    return manifest
+
+
+# ============================================================
+# 7. KEDRO PIPELINE
+# ============================================================
+
+def create_gold_fact_transaction_details_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_fact_transaction_details,
+            inputs=None,
+            outputs="gold_transaction_details_manifest",
+            name="build_gold_fact_transaction_details",
+            tags=["gold", "transactions", "details"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_transaction_details_manifest": MemoryDataset()
+    })
+
+    runner = SequentialRunner()
+    runner.run(
+        create_gold_fact_transaction_details_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load("gold_transaction_details_manifest")
+    assert result["status"] == "COMPLETED"
+
+    print("KEDRO GOLD TRANSACTION DETAILS PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_fact_transactions.py
+================================================================================
+"""
+AssetFusion360 Capstone
+Step 7.9 - Gold Transactions Fact Table
+
+Source: Silver AMPS Transactions
+Target: Gold fact_transactions
+
+Rules:
+- Preserve all 755,122 transaction records.
+- Preserve unique transaction identities and business codes.
+- Retain raw transaction codes for detail joins.
+- Preserve missing optional values.
+- Preserve Silver quality indicators.
+- Never overwrite existing Gold output.
+- Validate staged data before publication.
+"""
+
+import gc
+import json
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+# ============================================================
+# 1. CONFIGURATION
+# ============================================================
+
+ROOT = Path(__file__).resolve().parents[3]
+
+SILVER_DIR = (
+    ROOT / "data" / "03_silver_cleaned_data"
+    / "amps_transactions"
+)
+
+GOLD_ROOT = ROOT / "data" / "04_gold_analytics"
+
+FINAL_DIR = GOLD_ROOT / "fact_transactions"
+STAGING_DIR = GOLD_ROOT / "_staging_fact_transactions"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_fact_transactions_manifest.json"
+)
+
+EXPECTED_ROWS = 755_122
+EXPECTED_FILES = 152
+EXPECTED_SILVER_COLUMNS = 33
+BATCH_SIZE = 10000
+
+
+# ============================================================
+# 2. GOLD FACT SCHEMA
+# ============================================================
+
+GOLD_SCHEMA = pa.schema([
+    pa.field("transaction_identity", pa.int64(), nullable=False),
+    pa.field("transaction_code", pa.string(), nullable=False),
+    pa.field("transaction_code_numeric", pa.int64()),
+    pa.field("transaction_description", pa.string()),
+    pa.field("transaction_type", pa.string()),
+    pa.field("transaction_status", pa.string()),
+    pa.field("request_code", pa.string()),
+    pa.field("request_identity", pa.int64()),
+    pa.field("from_entity", pa.string()),
+    pa.field("from_code", pa.string()),
+    pa.field("to_entity", pa.string()),
+    pa.field("to_code", pa.string()),
+    pa.field("transaction_date", pa.timestamp("us")),
+    pa.field("created_at", pa.timestamp("us")),
+    pa.field("updated_at", pa.timestamp("us")),
+    pa.field("update_count", pa.int64()),
+    pa.field("dq_transaction_code_invalid", pa.bool_()),
+    pa.field("dq_transaction_identity_invalid", pa.bool_()),
+    pa.field("dq_transaction_request_invalid", pa.bool_()),
+    pa.field("dq_transaction_updatecount_invalid", pa.bool_()),
+    pa.field("dq_transaction_date_invalid", pa.bool_()),
+    pa.field("dq_transaction_created_invalid", pa.bool_()),
+    pa.field("dq_transaction_updated_invalid", pa.bool_()),
+    pa.field("silver_dq_issue", pa.bool_()),
+    pa.field("source_file", pa.string()),
+    pa.field("source_batch", pa.string()),
+    pa.field("source_ingested_at", pa.string()),
+])
+
+
+# Gold column -> Silver column
+SOURCE_MAPPING = {
+    "transaction_identity": "transaction_identity_int",
+    "transaction_code": "tra_code",
+    "transaction_code_numeric": "transaction_code_int",
+    "transaction_description": "tra_desc",
+    "transaction_type": "tra_type",
+    "transaction_status": "tra_status",
+    "request_code": "tra_req",
+    "request_identity": "transaction_request_int",
+    "from_entity": "tra_fromentity",
+    "from_code": "tra_fromcode",
+    "to_entity": "tra_toentity",
+    "to_code": "tra_tocode",
+    "transaction_date": "transaction_date_ts",
+    "created_at": "transaction_created_ts",
+    "updated_at": "transaction_updated_ts",
+    "update_count": "transaction_updatecount_int",
+    "dq_transaction_code_invalid": "dq_transaction_code_invalid",
+    "dq_transaction_identity_invalid": "dq_transaction_identity_invalid",
+    "dq_transaction_request_invalid": "dq_transaction_request_invalid",
+    "dq_transaction_updatecount_invalid": "dq_transaction_updatecount_invalid",
+    "dq_transaction_date_invalid": "dq_transaction_date_invalid",
+    "dq_transaction_created_invalid": "dq_transaction_created_invalid",
+    "dq_transaction_updated_invalid": "dq_transaction_updated_invalid",
+    "silver_dq_issue": "dq_any_issue",
+    "source_file": "_bronze_source_file",
+    "source_batch": "_bronze_batch_id",
+    "source_ingested_at": "_bronze_ingested_at_utc",
+}
+
+
+# ============================================================
+# 3. OUTPUT PROTECTION
+# ============================================================
+
+def check_outputs():
+    if not SILVER_DIR.is_dir():
+        raise FileNotFoundError(
+            f"Missing Silver Transactions: {SILVER_DIR}"
+        )
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output must be preserved: {path}"
+            )
+
+    print("Gold output safety: PASS")
+
+
+# ============================================================
+# 4. SILVER SOURCE VALIDATION
+# ============================================================
+
+def inspect_sources():
+    files = sorted(SILVER_DIR.glob("*.parquet"))
+
+    assert len(files) == EXPECTED_FILES, (
+        f"Expected {EXPECTED_FILES} Silver files, "
+        f"found {len(files)}"
+    )
+
+    reference_schema = pq.read_schema(files[0])
+
+    assert len(reference_schema) == EXPECTED_SILVER_COLUMNS
+
+    total_rows = 0
+
+    for path in files:
+        schema = pq.read_schema(path)
+
+        assert schema.equals(
+            reference_schema,
+            check_metadata=False
+        ), f"Schema mismatch: {path.name}"
+
+        total_rows += pq.read_metadata(path).num_rows
+
+    assert total_rows == EXPECTED_ROWS
+
+    assert len(GOLD_SCHEMA) == len(SOURCE_MAPPING)
+
+    for gold_name, silver_name in SOURCE_MAPPING.items():
+        assert silver_name in reference_schema.names, (
+            f"Missing Silver column: {silver_name}"
+        )
+
+        silver_type = reference_schema.field(
+            silver_name
+        ).type
+
+        gold_type = GOLD_SCHEMA.field(
+            gold_name
+        ).type
+
+        assert silver_type.equals(gold_type), (
+            f"Type mismatch for {gold_name}: "
+            f"{silver_type} != {gold_type}"
+        )
+
+    print("Silver Transaction files:", len(files))
+    print("Silver Transaction rows:", f"{total_rows:,}")
+    print("Silver Transaction columns:", len(reference_schema))
+    print("Gold Transaction columns:", len(GOLD_SCHEMA))
+    print("Source schema validation: PASS")
+
+    return files
+
+
+# ============================================================
+# 5. TRANSFORM SILVER BATCH
+# ============================================================
+
+def transform_batch(batch):
+    source = pa.Table.from_batches([batch])
+
+    columns = [
+        source.column(SOURCE_MAPPING[field.name])
+        for field in GOLD_SCHEMA
+    ]
+
+    result = pa.Table.from_arrays(
+        columns,
+        schema=GOLD_SCHEMA
+    )
+
+    assert result.num_rows == batch.num_rows
+
+    return result
+
+
+# ============================================================
+# 6. BUILD GOLD FACT_TRANSACTIONS
+# ============================================================
+
+def build_gold_fact_transactions():
+    print("=" * 68)
+    print("STEP 7.9 - BUILD GOLD FACT_TRANSACTIONS")
+    print("=" * 68)
+
+    check_outputs()
+    silver_files = inspect_sources()
+
+    STAGING_DIR.mkdir(
+        parents=True,
+        exist_ok=False
+    )
+
+    counts = Counter()
+
+    identities = set()
+    transaction_codes = set()
+
+    quality_fields = [
+        field.name
+        for field in GOLD_SCHEMA
+        if field.name.startswith("dq_")
+        or field.name == "silver_dq_issue"
+    ]
+
+    for index, source_file in enumerate(silver_files):
+        target_file = (
+            STAGING_DIR / f"part-{index:05d}.parquet"
+        )
+
+        with pq.ParquetFile(str(source_file)) as reader:
+            with pq.ParquetWriter(
+                str(target_file),
+                GOLD_SCHEMA,
+                compression="snappy",
+            ) as writer:
+                for batch in reader.iter_batches(
+                    batch_size=BATCH_SIZE,
+                    columns=list(SOURCE_MAPPING.values()),
+                ):
+                    gold = transform_batch(batch)
+
+                    identity_values = gold.column(
+                        "transaction_identity"
+                    ).to_pylist()
+
+                    code_values = gold.column(
+                        "transaction_code"
+                    ).to_pylist()
+
+                    for identity, code in zip(
+                        identity_values,
+                        code_values
+                    ):
+                        if identity is None:
+                            raise ValueError(
+                                "Missing transaction identity"
+                            )
+
+                        if identity in identities:
+                            raise ValueError(
+                                f"Duplicate identity: {identity}"
+                            )
+
+                        if code is None or not str(code).strip():
+                            raise ValueError(
+                                "Missing transaction code"
+                            )
+
+                        if code in transaction_codes:
+                            raise ValueError(
+                                f"Duplicate transaction code: {code}"
+                            )
+
+                        identities.add(identity)
+                        transaction_codes.add(code)
+
+                    for name in quality_fields:
+                        counts[name] += sum(
+                            value is True
+                            for value in gold.column(name).to_pylist()
+                        )
+
+                    counts["rows"] += gold.num_rows
+                    counts["missing_status"] += gold.column(
+                        "transaction_status"
+                    ).null_count
+
+                    counts["missing_type"] += gold.column(
+                        "transaction_type"
+                    ).null_count
+
+                    counts["missing_date"] += gold.column(
+                        "transaction_date"
+                    ).null_count
+
+                    writer.write_table(gold)
+
+        if (
+            (index + 1) % 25 == 0
+            or index + 1 == EXPECTED_FILES
+        ):
+            print(
+                f"Files: {index + 1}/{EXPECTED_FILES}"
+                f" | Rows: {counts['rows']:,}",
+                flush=True
+            )
+
+    # ========================================================
+    # 7. VALIDATE KEYS AND QUALITY FLAGS
+    # ========================================================
+
+    assert counts["rows"] == EXPECTED_ROWS
+    assert len(identities) == EXPECTED_ROWS
+    assert len(transaction_codes) == EXPECTED_ROWS
+
+    for name in quality_fields:
+        assert counts[name] == 0, (
+            f"Unexpected quality flags: "
+            f"{name}={counts[name]}"
+        )
+
+    # ========================================================
+    # 8. VALIDATE STAGED PARQUET
+    # ========================================================
+
+    staged_files = sorted(
+        STAGING_DIR.glob("*.parquet")
+    )
+
+    assert len(staged_files) == EXPECTED_FILES
+
+    verified_rows = 0
+
+    for path in staged_files:
+        schema = pq.read_schema(path)
+
+        assert schema.equals(
+            GOLD_SCHEMA,
+            check_metadata=False
+        ), f"Gold schema mismatch: {path.name}"
+
+        verified_rows += pq.read_metadata(path).num_rows
+
+    assert verified_rows == EXPECTED_ROWS
+
+    print("\nSTAGED GOLD TRANSACTION VALIDATION")
+    print("Transaction rows:", f"{verified_rows:,}")
+    print("Parquet files:", len(staged_files))
+    print("Unique transaction identities:", len(identities))
+    print("Unique transaction codes:", len(transaction_codes))
+    print("Gold columns:", len(GOLD_SCHEMA))
+    print("Silver DQ flagged rows:", counts["silver_dq_issue"])
+    print("Staged validation: PASS")
+
+    # ========================================================
+    # 9. PUBLISH WITHOUT OVERWRITING
+    # ========================================================
+
+    gc.collect()
+
+    if FINAL_DIR.exists():
+        raise FileExistsError(
+            f"Gold target appeared during build: {FINAL_DIR}"
+        )
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    # ========================================================
+    # 10. COMPLETION MANIFEST
+    # ========================================================
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "fact_transactions",
+        "status": "COMPLETED",
+        "source": SILVER_DIR.relative_to(ROOT).as_posix(),
+        "output": FINAL_DIR.relative_to(ROOT).as_posix(),
+        "rows": verified_rows,
+        "columns": len(GOLD_SCHEMA),
+        "parquet_files": len(staged_files),
+        "unique_transaction_identities": len(identities),
+        "unique_transaction_codes": len(transaction_codes),
+        "missing_status_rows": counts["missing_status"],
+        "missing_type_rows": counts["missing_type"],
+        "missing_date_rows": counts["missing_date"],
+        "silver_dq_issue_rows": counts["silver_dq_issue"],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    with MANIFEST.open(
+        "x",
+        encoding="utf-8"
+    ) as handle:
+        json.dump(
+            manifest,
+            handle,
+            indent=2
+        )
+
+    print("\nGOLD FACT_TRANSACTIONS BUILD: SUCCESS")
+
+    return manifest
+
+
+# ============================================================
+# 11. KEDRO PIPELINE
+# ============================================================
+
+def create_gold_fact_transactions_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_fact_transactions,
+            inputs=None,
+            outputs="gold_fact_transactions_manifest",
+            name="build_gold_fact_transactions",
+            tags=["gold", "transactions", "fact"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_fact_transactions_manifest": MemoryDataset()
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_gold_fact_transactions_pipeline(),
+        catalog
+    )
+
+    result = catalog.load(
+        "gold_fact_transactions_manifest"
+    )
+
+    assert result["status"] == "COMPLETED"
+
+    print(
+        "KEDRO GOLD FACT_TRANSACTIONS PIPELINE: SUCCESS"
+    )
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_fact_workorders.py
+================================================================================
+"""
+AssetFusion360 - Gold Work Orders Fact Table
+Step 7.7: Silver Work Orders to Gold
+
+One row per work order.
+Preserve ambiguous asset references.
+Protect existing datasets from overwriting.
+"""
+
+import gc
+import json
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+SILVER_DIR = (
+    ROOT / "data" / "03_silver_cleaned_data"
+    / "amps_workorders"
+)
+
+GOLD_ROOT = ROOT / "data" / "04_gold_analytics"
+
+BRIDGE_FILE = (
+    GOLD_ROOT / "bridge_asset_code"
+    / "part-00000.parquet"
+)
+
+FINAL_DIR = GOLD_ROOT / "fact_workorders"
+STAGING_DIR = GOLD_ROOT / "_staging_fact_workorders"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_fact_workorders_manifest.json"
+)
+
+EXPECTED_ROWS = 2_231_535
+EXPECTED_FILES = 447
+BATCH_SIZE = 10000
+
+
+GOLD_SCHEMA = pa.schema([
+    pa.field("workorder_identity", pa.int64()),
+    pa.field("workorder_code", pa.string()),
+    pa.field("asset_code", pa.string()),
+    pa.field("resolved_asset_identity", pa.int64()),
+    pa.field("asset_resolution_status", pa.string()),
+    pa.field("asset_reference_ambiguous", pa.bool_()),
+    pa.field("asset_code_placeholder", pa.bool_()),
+    pa.field("workorder_type", pa.string()),
+    pa.field("workorder_description", pa.string()),
+    pa.field("workorder_priority", pa.string()),
+    pa.field("workorder_class", pa.string()),
+    pa.field("job_type", pa.string()),
+    pa.field("workorder_date", pa.timestamp("us")),
+    pa.field("reported_at", pa.timestamp("us")),
+    pa.field("started_at", pa.timestamp("us")),
+    pa.field("due_at", pa.timestamp("us")),
+    pa.field("completed_at", pa.timestamp("us")),
+    pa.field("created_at", pa.timestamp("us")),
+    pa.field("updated_at", pa.timestamp("us")),
+    pa.field("duration", pa.decimal128(20, 6)),
+    pa.field("update_count", pa.int64()),
+    pa.field("silver_dq_issue", pa.bool_()),
+    pa.field("source_file", pa.string()),
+])
+
+
+SOURCE_MAPPING = {
+    "workorder_identity": "wo_identity_int",
+    "workorder_code": "evt_code",
+    "asset_code": "evt_object",
+    "workorder_type": "evt_type",
+    "workorder_description": "evt_desc",
+    "workorder_priority": "evt_priority",
+    "workorder_class": "evt_class",
+    "job_type": "evt_jobtype",
+    "workorder_date": "evt_date_ts",
+    "reported_at": "evt_reported_ts",
+    "started_at": "evt_start_ts",
+    "due_at": "evt_due_ts",
+    "completed_at": "evt_completed_ts",
+    "created_at": "evt_created_ts",
+    "updated_at": "evt_updated_ts",
+    "duration": "wo_duration_decimal",
+    "update_count": "wo_updatecount_int",
+    "silver_dq_issue": "dq_any_issue",
+    "source_file": "_bronze_source_file",
+}
+
+
+def check_outputs():
+    if not SILVER_DIR.is_dir():
+        raise FileNotFoundError(SILVER_DIR)
+
+    if not BRIDGE_FILE.is_file():
+        raise FileNotFoundError(BRIDGE_FILE)
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing artifact must be preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+def inspect_sources():
+    files = sorted(SILVER_DIR.glob("*.parquet"))
+
+    if len(files) != EXPECTED_FILES:
+        raise ValueError("Unexpected Silver file count")
+
+    schema = pq.read_schema(files[0])
+    total = 0
+
+    for path in files:
+        current_schema = pq.read_schema(path)
+
+        if not current_schema.equals(
+            schema, check_metadata=False
+        ):
+            raise ValueError(
+                f"Schema mismatch: {path.name}"
+            )
+
+        total += pq.read_metadata(path).num_rows
+
+    if total != EXPECTED_ROWS:
+        raise ValueError(
+            f"Unexpected Silver row count: {total}"
+        )
+
+    for gold_name, silver_name in SOURCE_MAPPING.items():
+        if silver_name not in schema.names:
+            raise ValueError(
+                f"Missing field: {silver_name}"
+            )
+
+        actual_type = schema.field(silver_name).type
+        expected_type = GOLD_SCHEMA.field(gold_name).type
+
+        if not actual_type.equals(expected_type):
+            raise TypeError(
+                f"{silver_name}: {actual_type} "
+                f"!= {expected_type}"
+            )
+
+    print("Silver files:", len(files))
+    print("Silver rows:", f"{total:,}")
+    print("Silver columns:", len(schema))
+    print("Gold columns:", len(GOLD_SCHEMA))
+    print("Source schema: PASS")
+
+    return files
+
+
+def load_asset_bridge():
+    bridge = {}
+
+    with pq.ParquetFile(str(BRIDGE_FILE)) as reader:
+        if reader.metadata.num_rows != 148_521:
+            raise ValueError("Unexpected bridge row count")
+
+        for batch in reader.iter_batches(
+            batch_size=BATCH_SIZE,
+            columns=[
+                "asset_code",
+                "resolved_asset_identity",
+                "resolution_status",
+                "is_ambiguous",
+                "is_placeholder",
+            ],
+        ):
+            for row in batch.to_pylist():
+                code = row["asset_code"]
+                status = row["resolution_status"]
+                identity = row["resolved_asset_identity"]
+
+                if code is None or code in bridge:
+                    raise ValueError(
+                        f"Invalid bridge code: {code}"
+                    )
+
+                if status not in {"UNIQUE", "AMBIGUOUS"}:
+                    raise ValueError(
+                        f"Invalid bridge status: {status}"
+                    )
+
+                if status == "UNIQUE":
+                    assert identity is not None
+                    assert row["is_ambiguous"] is False
+                else:
+                    assert identity is None
+                    assert row["is_ambiguous"] is True
+
+                bridge[code] = {
+                    "identity": identity,
+                    "status": status,
+                    "ambiguous": row["is_ambiguous"],
+                    "placeholder": row["is_placeholder"],
+                }
+
+    assert len(bridge) == 148_521
+    assert bridge["B223PA"]["status"] == "AMBIGUOUS"
+    assert bridge["B223PA"]["identity"] is None
+
+    print("Bridge codes:", f"{len(bridge):,}")
+    print("Ambiguous asset handling: PASS")
+
+    return bridge
+
+
+def transform_batch(batch, bridge):
+    source = pa.Table.from_batches([batch])
+
+    asset_codes = source.column(
+        "evt_object"
+    ).to_pylist()
+
+    resolved = []
+    statuses = []
+    ambiguous = []
+    placeholders = []
+
+    for code in asset_codes:
+        if code not in bridge:
+            raise ValueError(
+                f"Unmatched work-order asset code: {code!r}"
+            )
+
+        match = bridge[code]
+
+        resolved.append(match["identity"])
+        statuses.append(match["status"])
+        ambiguous.append(match["ambiguous"])
+        placeholders.append(match["placeholder"])
+
+    derived = {
+        "resolved_asset_identity": pa.array(
+            resolved, type=pa.int64()
+        ),
+        "asset_resolution_status": pa.array(
+            statuses, type=pa.string()
+        ),
+        "asset_reference_ambiguous": pa.array(
+            ambiguous, type=pa.bool_()
+        ),
+        "asset_code_placeholder": pa.array(
+            placeholders, type=pa.bool_()
+        ),
+    }
+
+    columns = []
+
+    for field in GOLD_SCHEMA:
+        name = field.name
+
+        if name in derived:
+            columns.append(derived[name])
+        else:
+            columns.append(
+                source.column(SOURCE_MAPPING[name])
+            )
+
+    result = pa.Table.from_arrays(
+        columns, schema=GOLD_SCHEMA
+    )
+
+    assert result.num_rows == batch.num_rows
+
+    return result
+
+
+def build_gold_fact_workorders():
+    print("=" * 68)
+    print("STEP 7.7 - BUILD GOLD FACT_WORKORDERS")
+    print("=" * 68)
+
+    check_outputs()
+    silver_files = inspect_sources()
+    bridge = load_asset_bridge()
+
+    STAGING_DIR.mkdir(
+        parents=True, exist_ok=False
+    )
+
+    counters = Counter()
+
+    for index, source_file in enumerate(silver_files):
+        output_file = (
+            STAGING_DIR / f"part-{index:05d}.parquet"
+        )
+
+        with pq.ParquetFile(str(source_file)) as reader:
+            with pq.ParquetWriter(
+                str(output_file),
+                GOLD_SCHEMA,
+                compression="snappy",
+            ) as writer:
+                for batch in reader.iter_batches(
+                    batch_size=BATCH_SIZE,
+                    columns=list(SOURCE_MAPPING.values()),
+                ):
+                    gold = transform_batch(batch, bridge)
+
+                    writer.write_table(gold)
+                    counters["rows"] += gold.num_rows
+
+                    for status in gold.column(
+                        "asset_resolution_status"
+                    ).to_pylist():
+                        counters[status] += 1
+
+                    counters["null_priority"] += (
+                        gold.column(
+                            "workorder_priority"
+                        ).null_count
+                    )
+
+                    counters["null_completed"] += (
+                        gold.column(
+                            "completed_at"
+                        ).null_count
+                    )
+
+                    counters["dq_issue"] += sum(
+                        value is True
+                        for value in gold.column(
+                            "silver_dq_issue"
+                        ).to_pylist()
+                    )
+
+        if (
+            (index + 1) % 25 == 0
+            or index + 1 == EXPECTED_FILES
+        ):
+            print(
+                f"Files: {index + 1}/{EXPECTED_FILES}"
+                f" | Rows: {counters['rows']:,}",
+                flush=True,
+            )
+
+    assert counters["rows"] == EXPECTED_ROWS
+    assert counters["UNIQUE"] == 2_231_135
+    assert counters["AMBIGUOUS"] == 400
+    assert counters["null_priority"] == 994_238
+    assert counters["null_completed"] == 25_585
+    assert counters["dq_issue"] == 0
+
+    staged_files = sorted(
+        STAGING_DIR.glob("*.parquet")
+    )
+
+    assert len(staged_files) == EXPECTED_FILES
+
+    verified_rows = 0
+
+    for path in staged_files:
+        assert pq.read_schema(path).equals(
+            GOLD_SCHEMA, check_metadata=False
+        )
+        verified_rows += pq.read_metadata(path).num_rows
+
+    assert verified_rows == EXPECTED_ROWS
+
+    print("\nSTAGED GOLD VALIDATION")
+    print("Verified rows:", f"{verified_rows:,}")
+    print("Unique asset mappings:", f"{counters['UNIQUE']:,}")
+    print("Ambiguous asset mappings:", counters["AMBIGUOUS"])
+    print("Staged validation: PASS")
+
+    gc.collect()
+
+    if FINAL_DIR.exists():
+        raise FileExistsError(
+            f"Gold output appeared: {FINAL_DIR}"
+        )
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold",
+        "table": "fact_workorders",
+        "status": "COMPLETED",
+        "rows": verified_rows,
+        "columns": len(GOLD_SCHEMA),
+        "parquet_files": len(staged_files),
+        "unique_asset_mapping_rows": counters["UNIQUE"],
+        "ambiguous_asset_mapping_rows": counters["AMBIGUOUS"],
+        "missing_priority_rows": counters["null_priority"],
+        "missing_completion_rows": counters["null_completed"],
+        "silver_dq_issue_rows": counters["dq_issue"],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True, exist_ok=True
+    )
+
+    with MANIFEST.open(
+        "x", encoding="utf-8"
+    ) as f:
+        json.dump(manifest, f, indent=2)
+
+    print("GOLD FACT_WORKORDERS BUILD: SUCCESS")
+
+    return manifest
+
+
+def create_gold_fact_workorders_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_fact_workorders,
+            inputs=None,
+            outputs="gold_fact_workorders_manifest",
+            name="build_gold_fact_workorders",
+            tags=["gold", "workorders", "fact"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_fact_workorders_manifest": MemoryDataset()
+    })
+
+    runner = SequentialRunner()
+
+    runner.run(
+        create_gold_fact_workorders_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load(
+        "gold_fact_workorders_manifest"
+    )
+
+    assert result["status"] == "COMPLETED"
+
+    print(
+        "KEDRO GOLD FACT_WORKORDERS PIPELINE: SUCCESS"
+    )
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_labor_monthly_kpis.py
+================================================================================
+"""
+AssetFusion360 Capstone
+Step 7.13 - Gold Monthly Labor KPIs
+
+Source: Gold fact_labor
+Grain: Labor month x work-order match status
+
+Preserves signed labor hours and costs.
+Unmatched labor records remain included.
+No existing data is overwritten.
+"""
+
+import gc
+import json
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
+from decimal import Decimal
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+GOLD_ROOT = ROOT / "data" / "04_gold_analytics"
+
+SOURCE_DIR = GOLD_ROOT / "fact_labor"
+FINAL_DIR = GOLD_ROOT / "gold_labor_monthly_kpis"
+STAGING_DIR = GOLD_ROOT / "_staging_gold_labor_monthly_kpis"
+
+FINAL_FILE = FINAL_DIR / "part-00000.parquet"
+STAGING_FILE = STAGING_DIR / "part-00000.parquet"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_labor_monthly_kpis_manifest.json"
+)
+
+EXPECTED_ROWS = 3_230_423
+EXPECTED_FILES = 647
+BATCH_SIZE = 10000
+
+ZERO = Decimal("0")
+
+SOURCE_FIELDS = [
+    "labor_date",
+    "labor_hours",
+    "labor_cost",
+    "labor_rate",
+    "workorder_match_status",
+    "negative_hours_flag",
+    "negative_cost_flag",
+    "zero_rate_flag",
+]
+
+GOLD_SCHEMA = pa.schema([
+    pa.field("reporting_month", pa.string(), nullable=False),
+    pa.field("workorder_match_status", pa.string(), nullable=False),
+    pa.field("labor_record_count", pa.int64()),
+    pa.field("total_labor_hours", pa.decimal128(30, 6)),
+    pa.field("total_labor_cost", pa.decimal128(30, 6)),
+    pa.field("negative_hours_count", pa.int64()),
+    pa.field("negative_cost_count", pa.int64()),
+    pa.field("zero_rate_count", pa.int64()),
+])
+
+
+def check_outputs():
+    if not SOURCE_DIR.is_dir():
+        raise FileNotFoundError(SOURCE_DIR)
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output must be preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+def inspect_source():
+    files = sorted(SOURCE_DIR.glob("*.parquet"))
+
+    assert len(files) == EXPECTED_FILES
+
+    schema = pq.read_schema(files[0])
+    rows = 0
+
+    for path in files:
+        assert pq.read_schema(path).equals(
+            schema,
+            check_metadata=False,
+        ), f"Schema mismatch: {path.name}"
+
+        rows += pq.read_metadata(path).num_rows
+
+    assert rows == EXPECTED_ROWS
+
+    expected_types = {
+        "labor_date": pa.timestamp("us"),
+        "labor_hours": pa.decimal128(20, 6),
+        "labor_cost": pa.decimal128(20, 6),
+        "labor_rate": pa.decimal128(20, 6),
+        "workorder_match_status": pa.string(),
+        "negative_hours_flag": pa.bool_(),
+        "negative_cost_flag": pa.bool_(),
+        "zero_rate_flag": pa.bool_(),
+    }
+
+    for field, expected_type in expected_types.items():
+        assert field in schema.names
+        assert schema.field(field).type.equals(
+            expected_type
+        ), f"Unexpected type: {field}"
+
+    print("Source files:", len(files))
+    print("Source Labor rows:", f"{rows:,}")
+    print("Source schema: PASS")
+
+    return files
+
+
+def aggregate_labor(files):
+    groups = defaultdict(Counter)
+    signed_totals = defaultdict(
+        lambda: {"hours": ZERO, "cost": ZERO}
+    )
+
+    counts = Counter()
+    months = set()
+
+    for index, path in enumerate(files, 1):
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=BATCH_SIZE,
+                columns=SOURCE_FIELDS,
+            ):
+                data = batch.to_pydict()
+
+                for i in range(batch.num_rows):
+                    date = data["labor_date"][i]
+                    status = data[
+                        "workorder_match_status"
+                    ][i]
+                    hours = data["labor_hours"][i]
+                    cost = data["labor_cost"][i]
+                    rate = data["labor_rate"][i]
+
+                    if date is None:
+                        raise ValueError(
+                            "Missing labor reporting date"
+                        )
+
+                    assert status in {
+                        "MATCHED",
+                        "UNMATCHED",
+                        "MISSING_REFERENCE",
+                    }
+
+                    assert hours is not None
+                    assert cost is not None
+                    assert rate is not None
+
+                    month = date.strftime("%Y-%m")
+                    key = (month, status)
+                    months.add(month)
+
+                    group = groups[key]
+                    group["labor_record_count"] += 1
+
+                    signed_totals[key]["hours"] += hours
+                    signed_totals[key]["cost"] += cost
+
+                    negative_hours = hours < 0
+                    negative_cost = cost < 0
+                    zero_rate = rate == 0
+
+                    # Independently verify Silver-derived flags.
+                    assert (
+                        data["negative_hours_flag"][i]
+                        == negative_hours
+                    )
+                    assert (
+                        data["negative_cost_flag"][i]
+                        == negative_cost
+                    )
+                    assert (
+                        data["zero_rate_flag"][i]
+                        == zero_rate
+                    )
+
+                    group["negative_hours_count"] += int(
+                        negative_hours
+                    )
+                    group["negative_cost_count"] += int(
+                        negative_cost
+                    )
+                    group["zero_rate_count"] += int(
+                        zero_rate
+                    )
+
+                    counts["rows"] += 1
+                    counts[status] += 1
+                    counts["negative_hours"] += int(
+                        negative_hours
+                    )
+                    counts["negative_cost"] += int(
+                        negative_cost
+                    )
+                    counts["zero_rate"] += int(zero_rate)
+
+        if index % 50 == 0 or index == len(files):
+            print(
+                f"Files: {index}/{len(files)}"
+                f" | Labor records: {counts['rows']:,}",
+                flush=True,
+            )
+
+    assert counts["rows"] == EXPECTED_ROWS
+    assert counts["MATCHED"] == 3_217_345
+    assert counts["UNMATCHED"] == 13_078
+    assert counts["MISSING_REFERENCE"] == 0
+
+    assert counts["negative_hours"] == 74_609
+    assert counts["negative_cost"] == 71_374
+    assert counts["zero_rate"] == 188_165
+
+    print("\nSOURCE RECONCILIATION")
+    print("Labor records:", f"{counts['rows']:,}")
+    print("Reporting months:", len(months))
+    print("Monthly/status groups:", len(groups))
+    print("Source reconciliation: PASS")
+
+    return groups, signed_totals, counts, months
+
+
+def build_gold_labor_monthly_kpis():
+    print("=" * 68)
+    print("STEP 7.13 - BUILD MONTHLY LABOR KPIS")
+    print("=" * 68)
+
+    check_outputs()
+    files = inspect_source()
+
+    groups, signed_totals, counts, months = (
+        aggregate_labor(files)
+    )
+
+    records = []
+
+    for month, status in sorted(groups):
+        key = (month, status)
+        metrics = groups[key]
+
+        records.append({
+            "reporting_month": month,
+            "workorder_match_status": status,
+            "labor_record_count": metrics[
+                "labor_record_count"
+            ],
+            "total_labor_hours": signed_totals[key]["hours"],
+            "total_labor_cost": signed_totals[key]["cost"],
+            "negative_hours_count": metrics[
+                "negative_hours_count"
+            ],
+            "negative_cost_count": metrics[
+                "negative_cost_count"
+            ],
+            "zero_rate_count": metrics["zero_rate_count"],
+        })
+
+    assert sum(
+        r["labor_record_count"] for r in records
+    ) == EXPECTED_ROWS
+
+    assert len({
+        (r["reporting_month"], r["workorder_match_status"])
+        for r in records
+    }) == len(records)
+
+    # Write only after full source reconciliation.
+    STAGING_DIR.mkdir(parents=True, exist_ok=False)
+
+    table = pa.Table.from_pylist(
+        records,
+        schema=GOLD_SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        STAGING_FILE,
+        compression="snappy",
+    )
+
+    del table
+    gc.collect()
+
+    with pq.ParquetFile(str(STAGING_FILE)) as reader:
+        assert reader.metadata.num_rows == len(records)
+        assert reader.schema_arrow.equals(
+            GOLD_SCHEMA,
+            check_metadata=False,
+        )
+        staged = reader.read().to_pylist()
+
+    assert staged == records
+
+    assert sum(
+        r["negative_hours_count"] for r in staged
+    ) == 74_609
+
+    assert sum(
+        r["negative_cost_count"] for r in staged
+    ) == 71_374
+
+    assert sum(
+        r["zero_rate_count"] for r in staged
+    ) == 188_165
+
+    print("\nSTAGED LABOR KPI VALIDATION")
+    print("KPI rows:", len(staged))
+    print("Source labor rows:", f"{EXPECTED_ROWS:,}")
+    print("Reporting months:", len(months))
+    print("Matched labor:", f"{counts['MATCHED']:,}")
+    print("Unmatched labor:", f"{counts['UNMATCHED']:,}")
+    print("Negative hours records:", counts["negative_hours"])
+    print("Negative cost records:", counts["negative_cost"])
+    print("Staged validation: PASS")
+
+    gc.collect()
+
+    if FINAL_DIR.exists():
+        raise FileExistsError(FINAL_DIR)
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold Analytics",
+        "table": "gold_labor_monthly_kpis",
+        "status": "COMPLETED",
+        "source": SOURCE_DIR.relative_to(ROOT).as_posix(),
+        "output": FINAL_FILE.relative_to(ROOT).as_posix(),
+        "rows": len(staged),
+        "columns": len(GOLD_SCHEMA),
+        "parquet_files": 1,
+        "source_labor_rows": EXPECTED_ROWS,
+        "reporting_months": len(months),
+        "first_month": min(months),
+        "last_month": max(months),
+        "matched_labor_rows": counts["MATCHED"],
+        "unmatched_labor_rows": counts["UNMATCHED"],
+        "negative_hours_rows": counts["negative_hours"],
+        "negative_cost_rows": counts["negative_cost"],
+        "zero_rate_rows": counts["zero_rate"],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open("x", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nGOLD LABOR MONTHLY KPIS: SUCCESS")
+    return manifest
+
+
+def create_gold_labor_monthly_kpis_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_labor_monthly_kpis,
+            inputs=None,
+            outputs="gold_labor_monthly_manifest",
+            name="build_gold_labor_monthly_kpis",
+            tags=["gold", "analytics", "labor", "kpi"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_labor_monthly_manifest": MemoryDataset()
+    })
+
+    SequentialRunner().run(
+        create_gold_labor_monthly_kpis_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load("gold_labor_monthly_manifest")
+    assert result["status"] == "COMPLETED"
+
+    print("KEDRO LABOR MONTHLY KPI PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_material_monthly_kpis.py
+================================================================================
+"""
+AssetFusion360 - Gold Monthly Material KPIs
+
+Source: Gold fact_transaction_details
+Grain: month x detail type x UOM x transaction match
+       status x work-order match status.
+
+Preserves signed quantities and missing values.
+No existing Gold table is overwritten.
+"""
+
+import gc
+import json
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
+from decimal import Decimal
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+SOURCE_DIR = GOLD / "fact_transaction_details"
+FINAL_DIR = GOLD / "gold_material_monthly_kpis"
+STAGING_DIR = GOLD / "_staging_gold_material_monthly_kpis"
+
+STAGING_FILE = STAGING_DIR / "part-00000.parquet"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_material_monthly_kpis_manifest.json"
+)
+
+EXPECTED_ROWS = 2_301_927
+EXPECTED_FILES = 461
+
+SOURCE_FIELDS = [
+    "detail_date",
+    "detail_type",
+    "part_uom",
+    "quantity",
+    "unit_price",
+    "average_price",
+    "transaction_match_status",
+    "workorder_match_status",
+    "negative_quantity_flag",
+    "negative_price_flag",
+    "zero_quantity_flag",
+    "zero_price_flag",
+]
+
+COUNT_FIELDS = [
+    "material_detail_count",
+    "quantity_present_count",
+    "quantity_missing_count",
+    "negative_quantity_count",
+    "zero_quantity_count",
+    "unit_price_present_count",
+    "unit_price_missing_count",
+    "negative_unit_price_count",
+    "zero_unit_price_count",
+    "average_price_missing_count",
+]
+
+SCHEMA = pa.schema([
+    pa.field("reporting_month", pa.string(), nullable=False),
+    pa.field("detail_type", pa.string(), nullable=False),
+    pa.field("part_uom", pa.string(), nullable=False),
+    pa.field(
+        "transaction_match_status",
+        pa.string(), nullable=False
+    ),
+    pa.field(
+        "workorder_match_status",
+        pa.string(), nullable=False
+    ),
+    pa.field("material_detail_count", pa.int64()),
+    pa.field("total_signed_quantity", pa.decimal128(30, 6)),
+    pa.field("quantity_present_count", pa.int64()),
+    pa.field("quantity_missing_count", pa.int64()),
+    pa.field("negative_quantity_count", pa.int64()),
+    pa.field("zero_quantity_count", pa.int64()),
+    pa.field("unit_price_present_count", pa.int64()),
+    pa.field("unit_price_missing_count", pa.int64()),
+    pa.field("negative_unit_price_count", pa.int64()),
+    pa.field("zero_unit_price_count", pa.int64()),
+    pa.field("average_price_missing_count", pa.int64()),
+])
+
+
+def check_outputs():
+    if not SOURCE_DIR.is_dir():
+        raise FileNotFoundError(SOURCE_DIR)
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+def inspect_source():
+    files = sorted(SOURCE_DIR.glob("*.parquet"))
+    assert len(files) == EXPECTED_FILES
+
+    schema = pq.read_schema(files[0])
+    total_rows = 0
+
+    for path in files:
+        assert pq.read_schema(path).equals(
+            schema, check_metadata=False
+        ), f"Schema mismatch: {path.name}"
+
+        total_rows += pq.read_metadata(path).num_rows
+
+    assert total_rows == EXPECTED_ROWS
+
+    for name in SOURCE_FIELDS:
+        assert name in schema.names, (
+            f"Missing source column: {name}"
+        )
+
+    assert pa.types.is_timestamp(
+        schema.field("detail_date").type
+    )
+
+    for name in [
+        "quantity", "unit_price", "average_price"
+    ]:
+        assert pa.types.is_decimal(
+            schema.field(name).type
+        )
+
+    for name in [
+        "negative_quantity_flag",
+        "negative_price_flag",
+        "zero_quantity_flag",
+        "zero_price_flag",
+    ]:
+        assert pa.types.is_boolean(
+            schema.field(name).type
+        )
+
+    print("Source Parquet files:", len(files))
+    print("Source detail records:", f"{total_rows:,}")
+    print("Source schema: PASS")
+
+    return files
+
+
+def category(value, missing_label):
+    return str(value) if value is not None else missing_label
+
+
+def aggregate_materials(files):
+    groups = defaultdict(Counter)
+    quantities = defaultdict(lambda: Decimal("0"))
+    totals = Counter()
+    months = set()
+
+    for index, path in enumerate(files, 1):
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=10000,
+                columns=SOURCE_FIELDS,
+            ):
+                for row in batch.to_pylist():
+                    date = row["detail_date"]
+                    quantity = row["quantity"]
+                    price = row["unit_price"]
+                    average_price = row["average_price"]
+
+                    month = (
+                        date.strftime("%Y-%m")
+                        if date is not None
+                        else "<MISSING_DATE>"
+                    )
+
+                    if date is not None:
+                        months.add(month)
+
+                    key = (
+                        month,
+                        category(
+                            row["detail_type"],
+                            "<MISSING_TYPE>",
+                        ),
+                        category(
+                            row["part_uom"],
+                            "<MISSING_UOM>",
+                        ),
+                        category(
+                            row["transaction_match_status"],
+                            "<MISSING_TRANSACTION_STATUS>",
+                        ),
+                        category(
+                            row["workorder_match_status"],
+                            "<MISSING_WORKORDER_STATUS>",
+                        ),
+                    )
+
+                    group = groups[key]
+                    group["material_detail_count"] += 1
+                    totals["material_detail_count"] += 1
+
+                    if quantity is None:
+                        group["quantity_missing_count"] += 1
+                        totals["quantity_missing_count"] += 1
+                    else:
+                        group["quantity_present_count"] += 1
+                        totals["quantity_present_count"] += 1
+                        quantities[key] += quantity
+
+                    if price is None:
+                        group["unit_price_missing_count"] += 1
+                        totals["unit_price_missing_count"] += 1
+                    else:
+                        group["unit_price_present_count"] += 1
+                        totals["unit_price_present_count"] += 1
+
+                    if average_price is None:
+                        group["average_price_missing_count"] += 1
+                        totals["average_price_missing_count"] += 1
+
+                    checks = {
+                        "negative_quantity_count": (
+                            quantity is not None
+                            and quantity < 0
+                        ),
+                        "zero_quantity_count": (
+                            quantity is not None
+                            and quantity == 0
+                        ),
+                        "negative_unit_price_count": (
+                            price is not None
+                            and price < 0
+                        ),
+                        "zero_unit_price_count": (
+                            price is not None
+                            and price == 0
+                        ),
+                    }
+
+                    flag_map = {
+                        "negative_quantity_count":
+                            "negative_quantity_flag",
+                        "zero_quantity_count":
+                            "zero_quantity_flag",
+                        "negative_unit_price_count":
+                            "negative_price_flag",
+                        "zero_unit_price_count":
+                            "zero_price_flag",
+                    }
+
+                    for measure, condition in checks.items():
+                        flag = row[flag_map[measure]]
+
+                        if flag is not None:
+                            assert flag == condition, (
+                                f"Source flag mismatch: {measure}"
+                            )
+
+                        group[measure] += int(condition)
+                        totals[measure] += int(condition)
+
+        if index % 50 == 0 or index == len(files):
+            print(
+                f"Processed files: {index}/{len(files)}"
+                f" | Detail records:"
+                f" {totals['material_detail_count']:,}",
+                flush=True,
+            )
+
+    assert totals["material_detail_count"] == EXPECTED_ROWS
+    assert totals["negative_quantity_count"] == 44_053
+    assert totals["negative_unit_price_count"] == 5_501
+    assert totals["zero_quantity_count"] == 164_449
+    assert totals["zero_unit_price_count"] == 61_515
+
+    print("\nSOURCE RECONCILIATION")
+    print("Detail records:", f"{EXPECTED_ROWS:,}")
+    print("Monthly KPI groups:", len(groups))
+    print("Reporting months:", len(months))
+    print("Source reconciliation: PASS")
+
+    return groups, quantities, totals, months
+
+
+def build_gold_material_monthly_kpis():
+    print("=" * 68)
+    print("STEP 7.15 - BUILD MONTHLY MATERIAL KPIS")
+    print("=" * 68)
+
+    check_outputs()
+    files = inspect_source()
+
+    groups, quantities, totals, months = (
+        aggregate_materials(files)
+    )
+
+    records = []
+
+    for key in sorted(groups):
+        metrics = groups[key]
+        n = metrics["material_detail_count"]
+
+        assert (
+            metrics["quantity_present_count"]
+            + metrics["quantity_missing_count"]
+            == n
+        )
+
+        assert (
+            metrics["unit_price_present_count"]
+            + metrics["unit_price_missing_count"]
+            == n
+        )
+
+        record = dict(zip(
+            [
+                "reporting_month",
+                "detail_type",
+                "part_uom",
+                "transaction_match_status",
+                "workorder_match_status",
+            ],
+            key,
+        ))
+
+        record["total_signed_quantity"] = quantities[key]
+
+        for name in COUNT_FIELDS:
+            record[name] = metrics[name]
+
+        records.append(record)
+
+    assert sum(
+        row["material_detail_count"] for row in records
+    ) == EXPECTED_ROWS
+
+    # Create staging only after source validation.
+    STAGING_DIR.mkdir(parents=True, exist_ok=False)
+
+    table = pa.Table.from_pylist(records, schema=SCHEMA)
+
+    pq.write_table(
+        table,
+        STAGING_FILE,
+        compression="snappy",
+    )
+
+    del table
+    gc.collect()
+
+    with pq.ParquetFile(str(STAGING_FILE)) as reader:
+        assert reader.metadata.num_rows == len(records)
+        assert reader.schema_arrow.equals(
+            SCHEMA, check_metadata=False
+        )
+        staged = reader.read().to_pylist()
+
+    assert staged == records
+
+    for name in COUNT_FIELDS:
+        assert sum(
+            row[name] for row in staged
+        ) == totals[name]
+
+    print("\nSTAGED MATERIAL KPI VALIDATION")
+    print("KPI rows:", len(staged))
+    print("Source detail records:", f"{EXPECTED_ROWS:,}")
+    print("Reporting months:", len(months))
+    print("Negative quantities:", 44_053)
+    print("Negative unit prices:", 5_501)
+    print("Zero quantities:", 164_449)
+    print("Zero unit prices:", 61_515)
+    print("Staged validation: PASS")
+
+    if FINAL_DIR.exists():
+        raise FileExistsError(FINAL_DIR)
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold Analytics",
+        "table": "gold_material_monthly_kpis",
+        "status": "COMPLETED",
+        "source": SOURCE_DIR.relative_to(ROOT).as_posix(),
+        "output": (
+            FINAL_DIR / "part-00000.parquet"
+        ).relative_to(ROOT).as_posix(),
+        "rows": len(staged),
+        "columns": len(SCHEMA),
+        "parquet_files": 1,
+        "source_detail_rows": EXPECTED_ROWS,
+        "reporting_months": len(months),
+        "first_month": min(months) if months else None,
+        "last_month": max(months) if months else None,
+        "negative_quantity_rows": totals[
+            "negative_quantity_count"
+        ],
+        "negative_price_rows": totals[
+            "negative_unit_price_count"
+        ],
+        "zero_quantity_rows": totals[
+            "zero_quantity_count"
+        ],
+        "zero_price_rows": totals[
+            "zero_unit_price_count"
+        ],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True, exist_ok=True
+    )
+
+    with MANIFEST.open(
+        "x", encoding="utf-8"
+    ) as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nGOLD MATERIAL MONTHLY KPIS: SUCCESS")
+    return manifest
+
+
+def create_gold_material_monthly_kpis_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_material_monthly_kpis,
+            inputs=None,
+            outputs="gold_material_monthly_manifest",
+            name="build_gold_material_monthly_kpis",
+            tags=["gold", "analytics", "material", "kpi"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_material_monthly_manifest": MemoryDataset()
+    })
+
+    SequentialRunner().run(
+        create_gold_material_monthly_kpis_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load(
+        "gold_material_monthly_manifest"
+    )
+
+    assert result["status"] == "COMPLETED"
+    print("KEDRO MATERIAL KPI PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_transaction_monthly_kpis.py
+================================================================================
+"""
+AssetFusion360 - Gold Monthly Transaction KPIs
+
+Source: fact_transactions
+Grain: reporting month x transaction type x transaction status
+
+Preserves missing reporting dates and category values.
+Runs through Kedro and publishes with staging safeguards.
+"""
+
+import gc
+import json
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+GOLD = ROOT / "data" / "04_gold_analytics"
+
+SOURCE_DIR = GOLD / "fact_transactions"
+FINAL_DIR = GOLD / "gold_transaction_monthly_kpis"
+STAGING_DIR = GOLD / "_staging_gold_transaction_monthly_kpis"
+
+STAGING_FILE = STAGING_DIR / "part-00000.parquet"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_transaction_monthly_kpis_manifest.json"
+)
+
+EXPECTED_ROWS = 755_122
+EXPECTED_FILES = 152
+
+SOURCE_FIELDS = [
+    "transaction_date",
+    "transaction_type",
+    "transaction_status",
+    "dq_transaction_date_invalid",
+    "silver_dq_issue",
+]
+
+SCHEMA = pa.schema([
+    pa.field("reporting_month", pa.string(), nullable=False),
+    pa.field("transaction_type", pa.string(), nullable=False),
+    pa.field("transaction_status", pa.string(), nullable=False),
+    pa.field("transaction_count", pa.int64(), nullable=False),
+    pa.field("missing_date_count", pa.int64(), nullable=False),
+    pa.field("invalid_date_flag_count", pa.int64(), nullable=False),
+    pa.field("silver_dq_issue_count", pa.int64(), nullable=False),
+])
+
+
+def check_outputs():
+    assert SOURCE_DIR.is_dir(), "Missing transaction Gold source"
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output must be preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+def inspect_source():
+    files = sorted(SOURCE_DIR.glob("*.parquet"))
+    assert len(files) == EXPECTED_FILES
+
+    reference = pq.read_schema(files[0])
+    total = 0
+
+    for path in files:
+        assert pq.read_schema(path).equals(
+            reference, check_metadata=False
+        ), f"Schema mismatch: {path.name}"
+
+        total += pq.read_metadata(path).num_rows
+
+    assert total == EXPECTED_ROWS
+
+    for field in SOURCE_FIELDS:
+        assert field in reference.names, (
+            f"Missing required field: {field}"
+        )
+
+    assert pa.types.is_timestamp(
+        reference.field("transaction_date").type
+    )
+
+    assert pa.types.is_boolean(
+        reference.field("dq_transaction_date_invalid").type
+    )
+
+    assert pa.types.is_boolean(
+        reference.field("silver_dq_issue").type
+    )
+
+    print("Source files:", len(files))
+    print("Source transactions:", f"{total:,}")
+    print("Source schema: PASS")
+
+    return files
+
+
+def aggregate_transactions(files):
+    groups = defaultdict(Counter)
+    totals = Counter()
+    valid_months = set()
+
+    for index, path in enumerate(files, 1):
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=10000,
+                columns=SOURCE_FIELDS,
+            ):
+                data = batch.to_pydict()
+
+                for i in range(batch.num_rows):
+                    date = data["transaction_date"][i]
+                    kind = data["transaction_type"][i]
+                    status = data["transaction_status"][i]
+
+                    if date is None:
+                        month = "<MISSING_DATE>"
+                    else:
+                        month = date.strftime("%Y-%m")
+                        valid_months.add(month)
+
+                    if kind is None:
+                        kind = "<MISSING_TYPE>"
+
+                    if status is None:
+                        status = "<MISSING_STATUS>"
+
+                    key = (month, kind, status)
+                    group = groups[key]
+
+                    missing_date = int(date is None)
+                    invalid_date = int(
+                        data["dq_transaction_date_invalid"][i]
+                        is True
+                    )
+                    dq_issue = int(
+                        data["silver_dq_issue"][i] is True
+                    )
+
+                    group["transaction_count"] += 1
+                    group["missing_date_count"] += missing_date
+                    group["invalid_date_flag_count"] += invalid_date
+                    group["silver_dq_issue_count"] += dq_issue
+
+                    totals["rows"] += 1
+                    totals["missing_date"] += missing_date
+                    totals["invalid_date"] += invalid_date
+                    totals["silver_dq"] += dq_issue
+
+        if index % 25 == 0 or index == len(files):
+            print(
+                f"Processed: {index}/{len(files)} files"
+                f" | {totals['rows']:,} transactions",
+                flush=True,
+            )
+
+    assert totals["rows"] == EXPECTED_ROWS
+
+    print("\nSOURCE RECONCILIATION")
+    print("Transactions:", f"{totals['rows']:,}")
+    print("Monthly/type/status groups:", len(groups))
+    print("Valid reporting months:", len(valid_months))
+    print("Missing dates:", totals["missing_date"])
+    print("Invalid date flags:", totals["invalid_date"])
+    print("Silver DQ issues:", totals["silver_dq"])
+    print("Source reconciliation: PASS")
+
+    return groups, totals, valid_months
+
+
+def build_gold_transaction_monthly_kpis():
+    print("=" * 68)
+    print("STEP 7.14 - BUILD MONTHLY TRANSACTION KPIS")
+    print("=" * 68)
+
+    check_outputs()
+    files = inspect_source()
+
+    groups, totals, valid_months = (
+        aggregate_transactions(files)
+    )
+
+    records = []
+
+    for key in sorted(groups):
+        month, kind, status = key
+        metrics = groups[key]
+
+        record = {
+            "reporting_month": month,
+            "transaction_type": kind,
+            "transaction_status": status,
+        }
+
+        for field in SCHEMA.names[3:]:
+            record[field] = metrics[field]
+
+        assert (
+            record["missing_date_count"]
+            <= record["transaction_count"]
+        )
+        assert (
+            record["invalid_date_flag_count"]
+            <= record["transaction_count"]
+        )
+        assert (
+            record["silver_dq_issue_count"]
+            <= record["transaction_count"]
+        )
+
+        records.append(record)
+
+    assert sum(
+        row["transaction_count"] for row in records
+    ) == EXPECTED_ROWS
+
+    # All source checks complete before creating staging.
+    STAGING_DIR.mkdir(parents=True, exist_ok=False)
+
+    table = pa.Table.from_pylist(records, schema=SCHEMA)
+
+    pq.write_table(
+        table,
+        STAGING_FILE,
+        compression="snappy",
+    )
+
+    del table
+    gc.collect()
+
+    # Independently verify staged output.
+    with pq.ParquetFile(str(STAGING_FILE)) as reader:
+        assert reader.metadata.num_rows == len(records)
+        assert reader.schema_arrow.equals(
+            SCHEMA, check_metadata=False
+        )
+        staged = reader.read().to_pylist()
+
+    assert staged == records
+
+    assert sum(
+        r["transaction_count"] for r in staged
+    ) == EXPECTED_ROWS
+
+    assert sum(
+        r["missing_date_count"] for r in staged
+    ) == totals["missing_date"]
+
+    assert sum(
+        r["invalid_date_flag_count"] for r in staged
+    ) == totals["invalid_date"]
+
+    assert sum(
+        r["silver_dq_issue_count"] for r in staged
+    ) == totals["silver_dq"]
+
+    print("\nSTAGED TRANSACTION KPI VALIDATION")
+    print("KPI rows:", len(staged))
+    print("Source transactions:", f"{EXPECTED_ROWS:,}")
+    print("Staged validation: PASS")
+
+    # Publish only after all staged checks pass.
+    if FINAL_DIR.exists():
+        raise FileExistsError(FINAL_DIR)
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold Analytics",
+        "table": "gold_transaction_monthly_kpis",
+        "status": "COMPLETED",
+        "source": SOURCE_DIR.relative_to(ROOT).as_posix(),
+        "output": (
+            FINAL_DIR / "part-00000.parquet"
+        ).relative_to(ROOT).as_posix(),
+        "rows": len(staged),
+        "columns": len(SCHEMA),
+        "parquet_files": 1,
+        "source_transaction_rows": EXPECTED_ROWS,
+        "reporting_months": len(valid_months),
+        "first_month": (
+            min(valid_months) if valid_months else None
+        ),
+        "last_month": (
+            max(valid_months) if valid_months else None
+        ),
+        "missing_date_rows": totals["missing_date"],
+        "invalid_date_flag_rows": totals["invalid_date"],
+        "silver_dq_issue_rows": totals["silver_dq"],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open("x", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+    print("\nGOLD TRANSACTION MONTHLY KPIS: SUCCESS")
+    return manifest
+
+
+def create_gold_transaction_monthly_kpis_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_transaction_monthly_kpis,
+            inputs=None,
+            outputs="gold_transaction_monthly_manifest",
+            name="build_gold_transaction_monthly_kpis",
+            tags=["gold", "analytics", "transaction", "kpi"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_transaction_monthly_manifest": MemoryDataset()
+    })
+
+    SequentialRunner().run(
+        create_gold_transaction_monthly_kpis_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load(
+        "gold_transaction_monthly_manifest"
+    )
+
+    assert result["status"] == "COMPLETED"
+
+    print("KEDRO TRANSACTION KPI PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
+
+================================================================================
+SOURCE FILE: gold_workorder_monthly_kpis.py
+================================================================================
+"""
+AssetFusion360 Capstone
+Step 7.12 - Monthly Work Order KPI Analytics
+
+Source: Gold fact_workorders
+Target: Gold gold_workorder_monthly_kpis
+
+Grain: One row per reporting month and work-order type.
+
+Monthly reporting is based on workorder_date.
+Completion metrics measure timestamp availability.
+No source files are modified or overwritten.
+"""
+
+import gc
+import json
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from kedro.io import DataCatalog, MemoryDataset
+from kedro.pipeline import node, pipeline
+from kedro.runner import SequentialRunner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+SOURCE_DIR = (
+    ROOT / "data" / "04_gold_analytics"
+    / "fact_workorders"
+)
+
+GOLD_ROOT = ROOT / "data" / "04_gold_analytics"
+
+FINAL_DIR = GOLD_ROOT / "gold_workorder_monthly_kpis"
+STAGING_DIR = GOLD_ROOT / "_staging_gold_workorder_monthly_kpis"
+
+FINAL_FILE = FINAL_DIR / "part-00000.parquet"
+STAGING_FILE = STAGING_DIR / "part-00000.parquet"
+
+MANIFEST = (
+    ROOT / "reports" / "data_profiling_reports"
+    / "gold_workorder_monthly_kpis_manifest.json"
+)
+
+EXPECTED_ROWS = 2_231_535
+EXPECTED_FILES = 447
+EXPECTED_MONTHS = 224
+BATCH_SIZE = 10000
+
+
+GOLD_SCHEMA = pa.schema([
+    pa.field("reporting_month", pa.string(), nullable=False),
+    pa.field("workorder_type", pa.string(), nullable=False),
+    pa.field("workorder_count", pa.int64()),
+    pa.field("completion_timestamp_present_count", pa.int64()),
+    pa.field("completion_timestamp_missing_count", pa.int64()),
+    pa.field("priority_present_count", pa.int64()),
+    pa.field("priority_missing_count", pa.int64()),
+    pa.field("ambiguous_asset_mapping_count", pa.int64()),
+    pa.field("unique_asset_mapping_count", pa.int64()),
+])
+
+
+SOURCE_FIELDS = [
+    "workorder_date",
+    "workorder_type",
+    "workorder_priority",
+    "completed_at",
+    "asset_resolution_status",
+]
+
+
+def check_outputs():
+    if not SOURCE_DIR.is_dir():
+        raise FileNotFoundError(SOURCE_DIR)
+
+    for path in [FINAL_DIR, STAGING_DIR, MANIFEST]:
+        if path.exists():
+            raise FileExistsError(
+                f"Existing output must be preserved: {path}"
+            )
+
+    print("Output safety: PASS")
+
+
+def inspect_source():
+    files = sorted(SOURCE_DIR.glob("*.parquet"))
+
+    assert len(files) == EXPECTED_FILES
+
+    reference_schema = pq.read_schema(files[0])
+    total_rows = 0
+
+    for path in files:
+        assert pq.read_schema(path).equals(
+            reference_schema,
+            check_metadata=False,
+        ), f"Schema mismatch: {path.name}"
+
+        total_rows += pq.read_metadata(path).num_rows
+
+    assert total_rows == EXPECTED_ROWS
+
+    for name in SOURCE_FIELDS:
+        assert name in reference_schema.names, (
+            f"Missing field: {name}"
+        )
+
+    assert pa.types.is_timestamp(
+        reference_schema.field("workorder_date").type
+    )
+
+    print("Source Parquet files:", len(files))
+    print("Source work orders:", f"{total_rows:,}")
+    print("Source schema: PASS")
+
+    return files
+
+
+def aggregate_workorders(files):
+    groups = defaultdict(Counter)
+    totals = Counter()
+    work_types = Counter()
+    months = set()
+
+    for index, path in enumerate(files, 1):
+        with pq.ParquetFile(str(path)) as reader:
+            for batch in reader.iter_batches(
+                batch_size=BATCH_SIZE,
+                columns=SOURCE_FIELDS,
+            ):
+                data = batch.to_pydict()
+
+                for i in range(batch.num_rows):
+                    date = data["workorder_date"][i]
+                    kind = data["workorder_type"][i]
+
+                    if date is None:
+                        raise ValueError(
+                            "Missing work-order reporting date"
+                        )
+
+                    if kind is None or not str(kind).strip():
+                        raise ValueError(
+                            "Missing work-order type"
+                        )
+
+                    month = date.strftime("%Y-%m")
+                    key = (month, kind)
+
+                    group = groups[key]
+                    group["workorder_count"] += 1
+
+                    totals["rows"] += 1
+                    work_types[kind] += 1
+                    months.add(month)
+
+                    completed = (
+                        data["completed_at"][i] is not None
+                    )
+
+                    priority_present = (
+                        data["workorder_priority"][i] is not None
+                    )
+
+                    status = data[
+                        "asset_resolution_status"
+                    ][i]
+
+                    if status not in {"UNIQUE", "AMBIGUOUS"}:
+                        raise ValueError(
+                            f"Invalid asset resolution: {status}"
+                        )
+
+                    if completed:
+                        group[
+                            "completion_timestamp_present_count"
+                        ] += 1
+                    else:
+                        group[
+                            "completion_timestamp_missing_count"
+                        ] += 1
+                        totals["missing_completion"] += 1
+
+                    if priority_present:
+                        group["priority_present_count"] += 1
+                    else:
+                        group["priority_missing_count"] += 1
+                        totals["missing_priority"] += 1
+
+                    if status == "AMBIGUOUS":
+                        group[
+                            "ambiguous_asset_mapping_count"
+                        ] += 1
+                        totals["ambiguous"] += 1
+                    else:
+                        group[
+                            "unique_asset_mapping_count"
+                        ] += 1
+
+        if index % 50 == 0 or index == len(files):
+            print(
+                f"Processed files: {index}/{len(files)}"
+                f" | Work orders: {totals['rows']:,}",
+                flush=True,
+            )
+
+    assert totals["rows"] == EXPECTED_ROWS
+    assert totals["missing_completion"] == 25_585
+    assert totals["missing_priority"] == 994_238
+    assert totals["ambiguous"] == 400
+
+    assert len(months) == EXPECTED_MONTHS
+    assert min(months) == "2001-03"
+    assert max(months) == "2026-10"
+
+    expected_types = {
+        "JOB": 1_848_051,
+        "IN": 108_258,
+        "PPM": 101_154,
+        "AA": 100_622,
+        "STAT": 43_219,
+        "MRC": 15_136,
+        "XA": 15_095,
+    }
+
+    assert dict(work_types) == expected_types
+
+    print("\nSOURCE RECONCILIATION")
+    print("Work orders:", f"{totals['rows']:,}")
+    print("Reporting months:", len(months))
+    print("Monthly/type groups:", len(groups))
+    print("Work-order types:", len(work_types))
+    print("Source reconciliation: PASS")
+
+    return groups, totals, months
+
+
+def build_gold_workorder_monthly_kpis():
+    print("=" * 68)
+    print("STEP 7.12 - BUILD MONTHLY WORK ORDER KPIS")
+    print("=" * 68)
+
+    check_outputs()
+    files = inspect_source()
+
+    groups, totals, months = aggregate_workorders(files)
+
+    records = []
+
+    for month, kind in sorted(groups):
+        metrics = groups[(month, kind)]
+
+        record = {
+            "reporting_month": month,
+            "workorder_type": kind,
+        }
+
+        for field in GOLD_SCHEMA.names[2:]:
+            record[field] = metrics[field]
+
+        assert (
+            record["completion_timestamp_present_count"]
+            + record["completion_timestamp_missing_count"]
+            == record["workorder_count"]
+        )
+
+        assert (
+            record["priority_present_count"]
+            + record["priority_missing_count"]
+            == record["workorder_count"]
+        )
+
+        assert (
+            record["ambiguous_asset_mapping_count"]
+            + record["unique_asset_mapping_count"]
+            == record["workorder_count"]
+        )
+
+        records.append(record)
+
+    assert len(records) == len(groups)
+
+    assert sum(
+        r["workorder_count"] for r in records
+    ) == EXPECTED_ROWS
+
+    # All checks above run before staging is created.
+    STAGING_DIR.mkdir(parents=True, exist_ok=False)
+
+    table = pa.Table.from_pylist(
+        records,
+        schema=GOLD_SCHEMA,
+    )
+
+    pq.write_table(
+        table,
+        STAGING_FILE,
+        compression="snappy",
+    )
+
+    del table
+    gc.collect()
+
+    # Independently verify the published schema and
+    # numerical reconciliation against staged data.
+    with pq.ParquetFile(str(STAGING_FILE)) as reader:
+        assert reader.metadata.num_rows == len(records)
+        assert reader.schema_arrow.equals(
+            GOLD_SCHEMA,
+            check_metadata=False,
+        )
+
+        staged = reader.read().to_pylist()
+
+    assert len(staged) == len(records)
+
+    assert len({
+        (r["reporting_month"], r["workorder_type"])
+        for r in staged
+    }) == len(records)
+
+    assert sum(
+        r["workorder_count"] for r in staged
+    ) == EXPECTED_ROWS
+
+    assert sum(
+        r["completion_timestamp_missing_count"]
+        for r in staged
+    ) == 25_585
+
+    assert sum(
+        r["priority_missing_count"]
+        for r in staged
+    ) == 994_238
+
+    assert sum(
+        r["ambiguous_asset_mapping_count"]
+        for r in staged
+    ) == 400
+
+    print("\nSTAGED KPI VALIDATION")
+    print("KPI rows:", len(staged))
+    print("Source work orders:", f"{EXPECTED_ROWS:,}")
+    print("Missing completion timestamps: 25,585")
+    print("Missing priorities: 994,238")
+    print("Ambiguous asset mappings: 400")
+    print("Staged validation: PASS")
+
+    gc.collect()
+
+    if FINAL_DIR.exists():
+        raise FileExistsError(FINAL_DIR)
+
+    STAGING_DIR.rename(FINAL_DIR)
+
+    manifest = {
+        "project": "AssetFusion360",
+        "layer": "Gold Analytics",
+        "table": "gold_workorder_monthly_kpis",
+        "status": "COMPLETED",
+        "source": SOURCE_DIR.relative_to(ROOT).as_posix(),
+        "output": FINAL_FILE.relative_to(ROOT).as_posix(),
+        "rows": len(staged),
+        "columns": len(GOLD_SCHEMA),
+        "parquet_files": 1,
+        "source_workorder_rows": EXPECTED_ROWS,
+        "reporting_months": len(months),
+        "first_month": min(months),
+        "last_month": max(months),
+        "missing_priority_rows": totals["missing_priority"],
+        "missing_completion_rows": totals["missing_completion"],
+        "ambiguous_asset_rows": totals["ambiguous"],
+        "created_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    MANIFEST.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with MANIFEST.open(
+        "x", encoding="utf-8"
+    ) as handle:
+        json.dump(manifest, handle, indent=2)
+
+    print("\nGOLD WORK ORDER MONTHLY KPIS: SUCCESS")
+
+    return manifest
+
+
+def create_gold_workorder_monthly_kpis_pipeline():
+    return pipeline([
+        node(
+            func=build_gold_workorder_monthly_kpis,
+            inputs=None,
+            outputs="gold_monthly_kpi_manifest",
+            name="build_gold_workorder_monthly_kpis",
+            tags=["gold", "analytics", "workorders", "kpi"],
+        )
+    ])
+
+
+def run_kedro_pipeline():
+    catalog = DataCatalog({
+        "gold_monthly_kpi_manifest": MemoryDataset()
+    })
+
+    SequentialRunner().run(
+        create_gold_workorder_monthly_kpis_pipeline(),
+        catalog,
+    )
+
+    result = catalog.load("gold_monthly_kpi_manifest")
+    assert result["status"] == "COMPLETED"
+
+    print("KEDRO MONTHLY KPI PIPELINE: SUCCESS")
+
+
+if __name__ == "__main__":
+    run_kedro_pipeline()
+
