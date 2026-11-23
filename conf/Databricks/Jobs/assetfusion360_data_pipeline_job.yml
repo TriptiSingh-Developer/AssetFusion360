@@ -1,0 +1,18 @@
+resources:
+  jobs:
+    AssetFusion360_Data_Pipeline_Validation:
+      name: AssetFusion360_Data_Pipeline_Validation
+      tasks:
+        - task_key: validate_silver_transformations
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_03_Silver_Transformations
+            source: WORKSPACE
+        - task_key: validate_gold_transformations
+          depends_on:
+            - task_key: validate_silver_transformations
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_02_Gold_Transformations
+            source: WORKSPACE
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
