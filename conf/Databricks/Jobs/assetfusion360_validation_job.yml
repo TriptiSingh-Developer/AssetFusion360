@@ -1,0 +1,60 @@
+resources:
+  jobs:
+    AssetFusion360_Bronze_Silver_Gold_Validation:
+      name: AssetFusion360_Bronze_Silver_Gold_Validation
+      tasks:
+        - task_key: validate_inputs
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_01_Validate_Inputs
+            source: WORKSPACE
+        - task_key: silver_assets
+          depends_on:
+            - task_key: validate_inputs
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_02A_Silver_Assets
+            source: WORKSPACE
+        - task_key: silver_workorders
+          depends_on:
+            - task_key: silver_assets
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_02B_Silver_WorkOrders
+            source: WORKSPACE
+        - task_key: silver_transactions
+          depends_on:
+            - task_key: silver_workorders
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_02C_Silver_Transactions
+            source: WORKSPACE
+        - task_key: silver_transaction_details
+          depends_on:
+            - task_key: silver_transactions
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_02D_Silver_TransactionDetails
+            source: WORKSPACE
+        - task_key: silver_labor
+          depends_on:
+            - task_key: silver_transaction_details
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_02E_Silver_Labor
+            source: WORKSPACE
+        - task_key: validate_silver
+          depends_on:
+            - task_key: silver_labor
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_03_Validate_All_Silver
+            source: WORKSPACE
+        - task_key: gold_readiness
+          depends_on:
+            - task_key: validate_silver
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_04_Gold_Readiness
+            source: WORKSPACE
+        - task_key: gold_dependencies
+          depends_on:
+            - task_key: gold_readiness
+          notebook_task:
+            notebook_path: /Workspace/Users/ts1514@scarletmail.rutgers.edu/AssetFusion360_Workflows/AssetFusion360_WF_05_Gold_Dependency_Map
+            source: WORKSPACE
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
