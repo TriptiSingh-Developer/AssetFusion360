@@ -10,3 +10,7 @@ lightgbm==4.7.0
 shap==0.54.1
 joblib
 requests
+faiss-cpu
+onnxruntime
+tokenizers
+huggingface-hub

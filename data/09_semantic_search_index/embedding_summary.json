@@ -1,0 +1,9 @@
+{
+    "status": "SUCCESS",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "total_embeddings": 849667,
+    "embedding_dimension": 384,
+    "total_batches": 170,
+    "normalized_embeddings": true,
+    "elapsed_minutes": 60.96
+}

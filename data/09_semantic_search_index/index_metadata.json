@@ -1,0 +1,19 @@
+{
+    "status": "SUCCESS",
+    "index_type": "IndexIVFPQ",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "metadata_hash": "5e84d8d0e6a1fb08ff8868ae049653ae0f5ed16fb6f8538878bdda0e40894bfe",
+    "total_vectors": 849667,
+    "embedding_dimension": 384,
+    "nlist": 1024,
+    "pq_subquantizers": 48,
+    "pq_bits": 8,
+    "nprobe": 32,
+    "training_vectors": 100000,
+    "metric": "inner_product",
+    "normalized_embeddings": true,
+    "index_size_mb": 49.56,
+    "metadata_size_mb": 40.98,
+    "elapsed_minutes": 0.91,
+    "smoke_test": "PASSED"
+}

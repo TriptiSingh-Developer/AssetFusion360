@@ -303,21 +303,100 @@ def run_agent(method, *args):
 
 
 
+
+# ============================================================
+# GENERATIVE AI QUOTA MANAGEMENT
+# ============================================================
+
+from datetime import datetime, timezone
+from threading import Lock
+
+DAILY_AI_LIMIT = 200
+SESSION_AI_LIMIT = 200
+
+
+@st.cache_resource
+def get_ai_quota():
+
+    return {
+        "date": datetime.now(timezone.utc).date(),
+        "requests": 0,
+        "lock": Lock()
+    }
+
+
+def reserve_ai_request():
+
+    quota = get_ai_quota()
+    today = datetime.now(timezone.utc).date()
+
+    with quota["lock"]:
+
+        if quota["date"] != today:
+
+            quota["date"] = today
+            quota["requests"] = 0
+
+        if st.session_state.get("ai_quota_date") != today:
+
+            st.session_state["ai_quota_date"] = today
+            st.session_state["ai_session_requests"] = 0
+
+        session_requests = st.session_state.get(
+            "ai_session_requests", 0
+        )
+
+        if session_requests + 2 > SESSION_AI_LIMIT:
+
+            return False, "Session AI limit reached."
+
+        if quota["requests"] + 2 > DAILY_AI_LIMIT:
+
+            return False, "Daily AI limit reached."
+
+        quota["requests"] += 2
+
+        st.session_state["ai_session_requests"] = (
+            session_requests + 2
+        )
+
+        return True, ""
+
+
 def run_llama_assistant(question):
 
     import os
+
+    allowed, reason = reserve_ai_request()
+
+    if not allowed:
+
+        result = run_agent("run", question)
+
+        result["llm_status"] = "fallback"
+
+        result["llm_message"] = (
+            reason
+            + " Original analytical evidence remains available."
+        )
+
+        return result
 
     account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
     api_token = os.getenv("CLOUDFLARE_API_TOKEN")
 
     try:
+
         account_id = st.secrets.get(
             "CLOUDFLARE_ACCOUNT_ID", account_id
         )
+
         api_token = st.secrets.get(
             "CLOUDFLARE_API_TOKEN", api_token
         )
+
     except FileNotFoundError:
+
         pass
 
     assistant = AssetGuardLlamaAgent(
@@ -326,8 +405,11 @@ def run_llama_assistant(question):
     )
 
     try:
+
         return assistant.run(question)
+
     finally:
+
         assistant.close()
 
 
@@ -1439,30 +1521,65 @@ elif page == "Explainable AI":
 # PAGE 5: MAINTENANCE CASE SEARCH
 # ============================================================
 
+
 elif page == "Maintenance Case Search":
+
+    import time
 
     page_header(
         "Maintenance Case Search",
-        "Retrieve historical corrective maintenance cases."
+        "Semantic and keyword-based historical maintenance retrieval."
     )
 
-    with st.form(
-        "maintenance_search"
-    ):
+    st.caption(
+        "Search 849,667 unique maintenance descriptions "
+        "representing 1,059,478 eligible corrective work orders."
+    )
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric(
+        "Indexed Descriptions",
+        "849,667"
+    )
+
+    c2.metric(
+        "Represented Work Orders",
+        "1,059,478"
+    )
+
+    c3.metric(
+        "FAISS Index Size",
+        "49.56 MB"
+    )
+
+    st.divider()
+
+    with st.form("maintenance_search"):
 
         query = st.text_input(
             "Describe the Maintenance Issue",
             placeholder=(
                 "Leaking pipe, broken door, "
-                "damaged bench..."
-            )
+                "damaged playground equipment..."
+            ),
+            max_chars=500
+        )
+
+        method = st.radio(
+            "Retrieval Method",
+            [
+                "Semantic Search",
+                "Keyword Search"
+            ],
+            horizontal=True
         )
 
         limit = st.slider(
             "Maximum Results",
             5,
-            100,
-            20,
+            50,
+            10,
             5
         )
 
@@ -1472,15 +1589,15 @@ elif page == "Maintenance Case Search":
 
     if submitted:
 
+        st.session_state.pop(
+            "case_results",
+            None
+        )
+
         if not query.strip():
 
             st.warning(
                 "Enter a maintenance issue."
-            )
-
-            st.session_state.pop(
-                "case_results",
-                None
             )
 
         else:
@@ -1489,25 +1606,68 @@ elif page == "Maintenance Case Search":
                 "Searching historical work orders..."
             ):
 
-                results = run_agent(
-                    "find_similar_workorders",
-                    query,
-                    limit
-                )
+                start_time = time.perf_counter()
 
-            st.session_state[
-                "case_results"
-            ] = results
+                actual_method = method
 
-            st.session_state[
-                "case_search_query"
-            ] = query
+                if method == "Semantic Search":
+
+                    try:
+
+                        from assetfusion360.pipelines.assetguard.llama_agent import (
+                            get_semantic_engine,
+                            _semantic_lock
+                        )
+
+                        with _semantic_lock:
+
+                            engine = get_semantic_engine()
+
+                            results = engine.search(
+                                query,
+                                limit=limit
+                            )
+
+                    except Exception:
+
+                        actual_method = "Keyword Search (Fallback)"
+
+                        results = run_agent(
+                            "find_similar_workorders",
+                            query,
+                            limit
+                        )
+
+                else:
+
+                    results = run_agent(
+                        "find_similar_workorders",
+                        query,
+                        limit
+                    )
+
+                latency = (
+                    time.perf_counter() - start_time
+                ) * 1000
+
+            st.session_state["case_results"] = results
+
+            st.session_state["case_search_query"] = query
+
+            st.session_state["case_search_method"] = actual_method
+
+            st.session_state["case_search_latency"] = latency
 
     if "case_results" in st.session_state:
 
-        results = st.session_state[
-            "case_results"
-        ]
+        results = st.session_state["case_results"]
+
+        actual_method = st.session_state.get(
+            "case_search_method",
+            "Keyword Search"
+        )
+
+        st.subheader("Historical Maintenance Cases")
 
         st.caption(
             "Search: "
@@ -1517,12 +1677,74 @@ elif page == "Maintenance Case Search":
             )
         )
 
-        st.metric(
+        if "Fallback" in actual_method:
+
+            st.warning(
+                "Semantic retrieval is temporarily unavailable. "
+                "Keyword results are displayed instead."
+            )
+
+        c1, c2, c3 = st.columns(3)
+
+        c1.metric(
             "Retrieved Cases",
             len(results)
         )
 
+        c2.metric(
+            "Search Time",
+            f"{st.session_state.get('case_search_latency', 0):,.2f} ms"
+        )
+
+        c3.metric(
+            "Retrieval Engine",
+            actual_method
+        )
+
         if not results.empty:
+
+            if "semantic_similarity" in results.columns:
+
+                st.metric(
+                    "Highest Similarity Score",
+                    f"{results['semantic_similarity'].max():.4f}"
+                )
+
+                st.caption(
+                    "Approximate vector similarity scores "
+                    "are not confidence probabilities."
+                )
+
+                chart_data = results.head(10).copy()
+
+                chart_data["case_label"] = (
+                    chart_data["workorder_code"].astype(str)
+                    + " | "
+                    + chart_data["workorder_description"]
+                    .astype(str).str.slice(0, 65)
+                )
+
+                fig = px.bar(
+                    chart_data.sort_values(
+                        "semantic_similarity"
+                    ),
+                    x="semantic_similarity",
+                    y="case_label",
+                    orientation="h",
+                    color_discrete_sequence=["#009CA6"]
+                )
+
+                fig.update_layout(
+                    height=420,
+                    xaxis_title="Approximate Similarity",
+                    yaxis_title=""
+                )
+
+                st.plotly_chart(
+                    chart_style(fig),
+                    use_container_width=True,
+                    key="semantic_case_similarity_chart"
+                )
 
             display_table(results)
 
@@ -1537,9 +1759,80 @@ elif page == "Maintenance Case Search":
                 "No matching work orders found."
             )
 
+    st.divider()
+
+    st.subheader("Retrieval Performance Benchmark")
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric(
+        "Keyword Search",
+        "763.68 ms"
+    )
+
+    c2.metric(
+        "Semantic Search",
+        "34.21 ms"
+    )
+
+    c3.metric(
+        "Local Retrieval Speedup",
+        "22.32x"
+    )
+
+    benchmark = pd.DataFrame({
+
+        "Retrieval Method": [
+            "Keyword Search",
+            "Semantic Search"
+        ],
+
+        "Average Latency (ms)": [
+            763.68,
+            34.21
+        ]
+
+    })
+
+    fig = px.bar(
+        benchmark,
+        x="Retrieval Method",
+        y="Average Latency (ms)",
+        color="Retrieval Method",
+        text="Average Latency (ms)",
+        color_discrete_map={
+            "Keyword Search": "#94A3B8",
+            "Semantic Search": "#009CA6"
+        }
+    )
+
+    fig.update_traces(
+        textposition="outside"
+    )
+
+    fig.update_layout(
+        showlegend=False,
+        height=350,
+        yaxis_range=[0, 950]
+    )
+
+    st.plotly_chart(
+        chart_style(fig),
+        use_container_width=True,
+        key="retrieval_benchmark_chart"
+    )
+
     st.caption(
-        "Retrieval method: keyword relevance and recency. "
-        "This is not semantic vector search."
+        "Local benchmark across 10 maintenance queries, "
+        "excluding initial model loading. "
+        "Cloud runtime performance may differ. "
+        "Formal relevance assessment remains pending."
+    )
+
+    st.info(
+        "Semantic retrieval uses MiniLM sentence embeddings "
+        "and a compressed FAISS IVF-PQ index. "
+        "Neither retrieval method consumes Llama API quota."
     )
 
 
@@ -1566,7 +1859,7 @@ elif page == "AI Assistant":
         ] = []
 
 
-    def render_response(result):
+    def render_response(result, response_id):
 
         if result.get("llm_status") == "success":
 
@@ -1659,7 +1952,8 @@ elif page == "AI Assistant":
 
             st.plotly_chart(
                 chart_style(fig),
-                use_container_width=True
+                use_container_width=True,
+                key=f"agent_shap_chart_{response_id}"
             )
 
             st.markdown(
@@ -1780,7 +2074,8 @@ elif page == "AI Assistant":
                 ):
 
                     render_response(
-                        message["content"]
+                        message["content"],
+                        index
                     )
 
     question = st.chat_input(

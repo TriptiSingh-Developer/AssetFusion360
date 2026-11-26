@@ -1,0 +1,11 @@
+{
+    "status": "SUCCESS",
+    "evaluated_queries": 10,
+    "top_k": 5,
+    "mean_keyword_latency_ms": 763.68,
+    "mean_semantic_latency_ms": 34.21,
+    "total_keyword_results": 50,
+    "total_semantic_results": 50,
+    "mean_retrieval_overlap": 0.2,
+    "relevance_evaluation": "Pending human relevance assessment"
+}
