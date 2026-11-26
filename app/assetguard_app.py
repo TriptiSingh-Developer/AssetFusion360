@@ -2141,193 +2141,161 @@ elif page == "AI Assistant":
 elif page == "Model Governance":
 
     page_header(
-        "Model Governance",
-        "Model methodology, traceability and responsible deployment."
+        "Model Governance & Responsible AI",
+        "Model transparency, AI architecture, validation, traceability and deployment controls."
     )
 
     c1, c2, c3 = st.columns(3)
+    c1.metric("Selected Algorithm", metadata["model_name"])
+    c2.metric("Model Features", len(metadata["features"]))
+    c3.metric("Prediction Horizon", f"{metadata['prediction_window_days']} Days")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Generative Model", "Llama 4 Scout")
+    c2.metric("Indexed Descriptions", "849,667")
+    c3.metric("Deployment", "Public Cloud")
 
-    c1.metric(
-        "Selected Algorithm",
-        metadata["model_name"]
-    )
+    st.info("Historical research prototype: the forecast covers October 25 through November 23, 2026. Refresh the source data before making current predictions.")
 
-    c2.metric(
-        "Model Features",
-        len(metadata["features"])
-    )
+    def governance_table(rows, columns):
+        st.table(pd.DataFrame(rows, columns=columns).style.hide(axis="index"))
 
-    c3.metric(
-        "Prediction Horizon",
-        f"{metadata['prediction_window_days']} Days"
-    )
+    tabs = st.tabs(["Predictive Model", "Data & Experiments", "AI & Retrieval", "Controls & Deployment", "Limitations & Roadmap"])
 
-    st.subheader(
-        "Model Information"
-    )
+    with tabs[0]:
+        st.subheader("Predictive Model Information")
+        governance_table([
+            ("Algorithm", metadata["model_name"]),
+            ("Learning type", "Supervised binary classification"),
+            ("Target", "At least one new corrective work order in the next 30 days"),
+            ("Selection metric", "Average precision"),
+            ("Decision threshold", f"{metadata['threshold']:.4f}"),
+            ("Random seed", str(metadata["random_state"])),
+            ("Score calibration", "Not calibrated"),
+            ("Model stage", str(metadata["model_stage"])),
+        ], ["Parameter", "Value"])
 
-    st.json(metadata)
-
-    st.divider()
-
-    st.subheader(
-        "Dataset Validation"
-    )
-
-    st.write(
-        "Validation Status:",
-        validation["status"]
-    )
-
-    split_summary = pd.DataFrame(
-        validation["dataset_summary"]
-    )
-
-    display_table(
-        split_summary
-    )
-
-    st.subheader(
-        "Temporal Dataset Distribution"
-    )
-
-    fig = px.bar(
-
-        split_summary,
-
-        x="dataset_split",
-
-        y="records",
-
-        color="dataset_split",
-
-        text="records",
-
-        color_discrete_map={
-
-            "train": "#009CA6",
-
-            "validation": "#F59E0B",
-
-            "test": "#082238"
-
-        },
-
-        category_orders={
-
-            "dataset_split": [
-                "train",
-                "validation",
-                "test"
-            ]
-
+        st.subheader("Feature Dictionary")
+        definitions = {
+            "wo_count_30d": "All work orders in the preceding 30 days",
+            "wo_count_90d": "All work orders in the preceding 90 days",
+            "wo_count_180d": "All work orders in the preceding 180 days",
+            "wo_count_365d": "All work orders in the preceding 365 days",
+            "cm_count_30d": "Corrective work orders in the preceding 30 days",
+            "cm_count_90d": "Corrective work orders in the preceding 90 days",
+            "cm_count_365d": "Corrective work orders in the preceding 365 days",
+            "days_since_last_wo": "Days since the last work order",
+            "days_since_last_cm": "Days since the last corrective work order; 366 if none in the lookback",
+            "no_cm_history_365d": "Indicator for no corrective work order in the previous year",
+            "corrective_ratio_90d": "Corrective share of work orders in the preceding 90 days",
+            "snapshot_month": "Calendar month of the observation, representing seasonality",
         }
+        governance_table([(f, definitions.get(f, "See technical metadata")) for f in metadata["features"]], ["Feature", "Business definition"])
 
-    )
+        st.subheader("Independent Test Performance")
+        for group in [
+            [("ROC-AUC", "roc_auc"), ("Accuracy", "accuracy"), ("Average Precision", "average_precision")],
+            [("Precision", "precision"), ("Recall", "recall"), ("F1 Score", "f1_score")],
+        ]:
+            for col, (label, key) in zip(st.columns(3), group):
+                col.metric(label, f"{metrics[key]:.2%}")
+        st.caption("Chronological held-out test set; discrimination metrics are not evidence of score calibration.")
+        with st.expander("Advanced technical metadata"):
+            st.json(metadata)
 
-    fig.update_traces(
-        texttemplate="%{text:,}",
-        textposition="outside"
-    )
+    with tabs[1]:
+        st.subheader("Dataset Validation")
+        st.write("Validation status:", validation["status"])
+        governance_table([
+            ("Duplicate observation groups", validation["duplicate_groups"]),
+            ("Invalid historical features", validation["invalid_historical_features"]),
+            ("Incomplete target windows", validation["incomplete_target_windows"]),
+        ], ["Validation check", "Exceptions"])
+        split_summary = pd.DataFrame(validation["dataset_summary"])
+        display_table(split_summary)
+        st.subheader("Temporal Dataset Distribution")
+        fig = px.bar(split_summary, x="dataset_split", y="records", color="dataset_split",
+                     text="records", color_discrete_map={"train": TEAL, "validation": "#F59E0B", "test": NAVY},
+                     category_orders={"dataset_split": ["train", "validation", "test"]})
+        fig.update_traces(texttemplate="%{text:,}", textposition="outside")
+        fig.update_layout(showlegend=False, xaxis_title="Dataset Split", yaxis_title="Observations")
+        fig.update_yaxes(range=[0, split_summary["records"].max() * 1.2])
+        st.plotly_chart(chart_style(fig), use_container_width=True, key="governance_temporal_split")
+        st.subheader("Experiment Tracking")
+        st.write("MLflow run ID")
+        st.code(metadata["mlflow_run_id"])
+        with st.expander("Local MLflow reproduction"):
+            st.code("mlflow ui --backend-store-uri sqlite:///assetguard_mlflow.db --host 127.0.0.1 --port 5000", language="powershell")
+            st.caption("Requires the local experiment database; it is not hosted by this public app.")
 
-    fig.update_layout(
-        showlegend=False,
-        xaxis_title="Dataset Split",
-        yaxis_title="Number of Observations"
-    )
+    with tabs[2]:
+        st.subheader("AI Architecture & Governance")
+        governance_table([
+            ("Predictive AI", "XGBoost: corrective maintenance demand"),
+            ("Explainable AI", "SHAP: model-margin contributions"),
+            ("Generative AI", "Meta Llama 4 Scout via Cloudflare Workers AI"),
+            ("AI Agent", "AssetGuardAgent: read-only analytical tools"),
+            ("Agentic AI", "Deterministic routing with validated LLM intent fallback"),
+            ("Structured RAG", "DuckDB and SQL: risk, history and explanations"),
+            ("Semantic RAG", "MiniLM and FAISS IVF-PQ: historical descriptions"),
+            ("Optimized inference", "ONNX Runtime: query embedding inference"),
+        ], ["Capability", "Implementation"])
+        st.subheader("Semantic Retrieval Governance")
+        for group in [
+            [("Unique descriptions", "849,667"), ("Represented work orders", "1,059,478"), ("Embedding dimensions", "384")],
+            [("FAISS index size", "49.56 MB"), ("Local semantic latency", "34.21 ms"), ("Local retrieval speedup", "22.32x")],
+        ]:
+            for col, (label, value) in zip(st.columns(3), group):
+                col.metric(label, value)
+        st.caption("Original warmed local benchmark: ten queries, top five results. Not a cloud latency benchmark. Human relevance assessment remains pending.")
+        st.write("Approximate similarity scores are not probabilities. One representative record per normalized description is indexed; occurrence counts are not proof of repeated failures of one asset.")
 
-    fig.update_yaxes(
-        range=[
-            0,
-            split_summary["records"].max() * 1.2
-        ]
-    )
+    with tabs[3]:
+        st.subheader("Responsible AI & Security")
+        governance_table([
+            ("Tool selection", "Restricted supported intents and read-only analytical operations"),
+            ("Asset identification", "Validate supplied identifiers; do not invent asset IDs"),
+            ("Evidence grounding", "Retrieved analytical records and historical source identifiers"),
+            ("API failure", "Analytical fallback"),
+            ("Credential storage", "Private Streamlit Secrets or environment variables"),
+            ("Usage management", "In-memory request reservations; provider quota applies"),
+            ("Sensitive text handling", "Basic email and phone redaction; not comprehensive PII detection"),
+            ("Autonomous maintenance execution", "Not enabled"),
+            ("Human oversight", "Review and approval required"),
+        ], ["Control", "Implementation"])
+        st.caption("Application counters reset on restart and are not a guaranteed billing cap. Keep the provider on its free plan; no paid resources are required by this design.")
+        st.subheader("Deployment & CI/CD")
+        st.success("Public research prototype; ONNX runtime integrated and pull request #5 merged with two passing checks.")
+        st.write("Live semantic retrieval and asset-code assessment were demonstrated. Sustained load testing, optimized memory measurements, production monitoring and access controls remain pending.")
+        st.markdown("[GitHub repository](https://github.com/TriptiSingh-Developer/AssetFusion360) | [CI/CD results](https://github.com/TriptiSingh-Developer/AssetFusion360/actions) | [Deployment pull request](https://github.com/TriptiSingh-Developer/AssetFusion360/pull/5)")
 
-    st.plotly_chart(
-        chart_style(fig),
-        use_container_width=True
-    )
-
-    st.divider()
-
-    st.subheader(
-        "Experiment Tracking"
-    )
-
-    st.write(
-        "MLflow Run ID"
-    )
-
-    st.code(
-        metadata["mlflow_run_id"]
-    )
-
-    st.write(
-        "Run MLflow locally from the project root:"
-    )
-
-    st.code(
-
-        "mlflow ui --backend-store-uri "
-        "sqlite:///assetguard_mlflow.db "
-        "--host 127.0.0.1 --port 5000",
-
-        language="powershell"
-
-    )
-
-    st.divider()
-
-    st.subheader(
-        "Model Limitations"
-    )
-
-    limitations = [
-
-        "Predictions represent corrective maintenance "
-        "demand rather than physical equipment failure.",
-
-        "Model risk scores are not calibrated probabilities.",
-
-        "Historical work-order attributes may have changed "
-        "after their original creation.",
-
-        "Only assets with work orders in the previous "
-        "365 days are eligible for scoring.",
-
-        "The current batch uses work-order history through "
-        "October 24, 2026.",
-
-        "The batch forecast uses a different day of month "
-        "from the historical training snapshots.",
-
-        "Medium, Moderate and Low risk boundaries "
-        "are provisional business rules.",
-
-        "Random Forest was trained on a smaller "
-        "stratified training sample.",
-
-        "The maintenance assistant uses deterministic "
-        "intent routing and keyword retrieval.",
-
-        "Maintenance actions require human review "
-        "and confirmation of present asset condition."
-
-    ]
-
-    for limitation in limitations:
-
-        st.write("•", limitation)
-
-    st.subheader(
-        "Deployment Status"
-    )
-
-    st.info(
-        "Local research prototype. "
-        "Production deployment requires source refresh, "
-        "monitoring, access controls and further validation."
-    )
+    with tabs[4]:
+        st.subheader("Model & AI Limitations")
+        for limitation in [
+            "Predicts corrective maintenance demand, not physical failure.",
+            "Model risk scores are not calibrated probabilities.",
+            "Historical work-order attributes may have changed after creation.",
+            "Only assets with work orders in the previous 365 days are eligible.",
+            "Current batch uses history through October 24, 2026; forecast end November 24 is exclusive.",
+            "Batch scoring uses a different day of month from training snapshots.",
+            "Medium, Moderate and Low thresholds are provisional business rules.",
+            "Random Forest used a smaller stratified training sample.",
+            "Generative responses may contain inaccuracies; source evidence must be checked.",
+            "Formal semantic relevance evaluation and optimized memory measurements remain pending.",
+            "Maintenance actions require human review and confirmation of present asset condition.",
+        ]:
+            st.write("•", limitation)
+        st.subheader("Future Development")
+        governance_table([
+            ("Fully autonomous AI", "Independent planning, execution and self-correction within approved safeguards"),
+            ("Multi-agent AI", "Multiple collaborating specialized agents"),
+            ("Scheduled data refresh", "Refresh historical sources and scoring batches"),
+            ("Model monitoring", "Monitor data drift, model performance and retrieval relevance"),
+            ("Risk calibration", "Evaluate and calibrate scores on appropriate holdout data"),
+            ("Automated retraining", "Validated, controlled model lifecycle"),
+            ("Role-based access", "Production authorization and audit controls"),
+            ("Metadata optimization", "On-demand retrieval and cloud memory/load validation"),
+        ], ["Future capability", "Proposed work"])
+        st.caption("Future capabilities are not implemented; human approval remains required for operational actions.")
 
 
 # ============================================================
