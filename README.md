@@ -32,6 +32,10 @@ The platform addresses three operational questions: Which assets need attention?
 | Assets scored in batch forecast | 14,983 |
 | High-risk assets identified | 2,415 |
 | Interactive application pages | 7 |
+| Eligible corrective maintenance records for semantic search | 1,059,478 |
+| Indexed unique descriptions | 849,667 |
+| Compressed FAISS index | 49.56 MB |
+| Local semantic retrieval speedup (10 queries) | 22.32× |
 
 ## Architecture
 
@@ -49,7 +53,13 @@ flowchart TD
     I --> K[DuckDB maintenance intelligence]
     J --> K
     D --> K
-    K --> L[Streamlit Cloud application]
+    D --> M[MiniLM embeddings and FAISS IVF-PQ]
+    M --> N[Semantic maintenance retrieval]
+    K --> O[Hybrid intent routing and evidence assembly]
+    N --> O
+    O --> P[Llama 4 Scout via Cloudflare Workers AI]
+    P --> L[Streamlit Cloud application]
+    K --> L
     I --> L
     J --> L
 ```
@@ -308,8 +318,8 @@ The scores are uncalibrated model outputs. High risk uses the validated decision
 | Asset Risk Explorer | Searchable risk register, filters and CSV exports |
 | Asset 360 | Individual risk scores, SHAP drivers, maintenance history and recommendations |
 | Explainable AI | Model comparison, test metrics, confusion matrix and SHAP analysis |
-| Maintenance Case Search | Keyword-based retrieval of historical work orders |
-| AI Assistant | Tool-based natural-language question routing and evidence retrieval |
+| Maintenance Case Search | Semantic FAISS and keyword retrieval, with fallback |
+| AI Assistant | Hybrid intent routing, structured and semantic evidence, Llama generation |
 | Model Governance | Model metadata, temporal splits, experiment tracking and limitations |
 
 Example assistant queries:
@@ -320,7 +330,45 @@ Example assistant queries:
 - Show maintenance history for asset 14167
 - Find similar workorders for leaking pipe
 
-The current assistant uses deterministic intent routing and DuckDB retrieval. Hosted Llama integration and semantic vector search are planned extensions, not implemented capabilities of this release.
+The AssetGuard assistant combines deterministic routing with Llama-based intent classification for unfamiliar questions, validated analytical tool selection, DuckDB retrieval and evidence-grounded generation through Cloudflare Workers AI. Local semantic RAG validation retrieved historical maintenance descriptions and generated responses citing work-order identifiers. The public Llama integration has been exercised; the final optimized semantic cloud deployment still requires end-to-end validation.
+
+## Agentic AI and semantic RAG
+
+- **Predictive AI:** XGBoost corrective maintenance demand scoring.
+- **Explainable AI:** SHAP global and local feature contributions.
+- **Structured RAG:** DuckDB portfolio, asset risk and work-order evidence.
+- **Semantic RAG:** MiniLM embeddings and FAISS approximate nearest-neighbor retrieval over normalized historical descriptions.
+- **Agentic orchestration:** deterministic routing with LLM intent-classification fallback and restricted read-only analytical tools.
+- **Generative AI:** Meta Llama 4 Scout hosted on Cloudflare Workers AI, with analytical fallback if generation is unavailable.
+
+### Semantic index and benchmark
+
+| Metric | Measured result |
+|---|---:|
+| Eligible historical corrective work orders | 1,059,478 |
+| Unique normalized descriptions | 849,667 |
+| Redundant embedding operations avoided | 209,811 |
+| Embedding dimension | 384 |
+| Index type | FAISS IndexIVFPQ |
+| IVF clusters / search probes | 1,024 / 32 |
+| PQ subquantizers / bits | 48 / 8 |
+| Index training sample | 100,000 |
+| Index file size | 49.56 MB |
+| Metadata file size | 40.98 MB |
+| Vector storage reduction vs raw float32 | Approximately 96.2% |
+| Mean keyword retrieval latency | 763.68 ms |
+| Mean semantic retrieval latency | 34.21 ms |
+| Local retrieval speedup | 22.32× |
+
+The benchmark uses ten queries, five results per method, and excludes model startup. It measures the original local semantic runtime, not ONNX or hosted performance. Formal human relevance assessment remains pending; similarity scores and retrieval overlap are not measures of accuracy. One representative record per normalized description is indexed with its occurrence count. Full historical records remain in Gold.
+
+[Index metadata](data/09_semantic_search_index/index_metadata.json) · [Retrieval benchmark](data/09_semantic_search_index/evaluation/retrieval_summary.json)
+
+### Runtime and deployment safeguards
+
+The local PyTorch semantic engine measured 835.01 MiB RSS after retrieval. ONNX inference and on-demand DuckDB metadata access are the proposed lightweight replacement; the current main-branch semantic search implementation still imports PyTorch and Sentence Transformers. Cloud dependencies and runtime implementation must be reconciled before optimized deployment is considered validated.
+
+Cloudflare credentials must be supplied through environment variables or private Streamlit Secrets (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`), never committed. Free-plan usage is subject to provider quotas. Application request counters are not a persistent account-wide billing cap. External processing of work-order descriptions requires authorization; basic email/phone redaction is not comprehensive PII detection. Generated explanations are decision support, not autonomous maintenance actions.
 
 ## Technology stack
 
@@ -330,6 +378,9 @@ The current assistant uses deterministic intent routing and DuckDB retrieval. Ho
 | Analytical storage | Parquet, DuckDB |
 | Machine learning | scikit-learn, XGBoost, LightGBM |
 | Explainability and experiments | SHAP, MLflow |
+| Semantic retrieval | MiniLM, FAISS IVF-PQ, DuckDB |
+| Generative and agentic AI | Meta Llama 4 Scout, Cloudflare Workers AI, validated intent routing |
+| Runtime optimization | ONNX Runtime (deployment validation pending) |
 | Visualization | Power BI, Plotly, Streamlit |
 | Deployment and version control | Streamlit Community Cloud, GitHub |
 
@@ -345,7 +396,8 @@ AssetFusion360/
 │   ├── 05_predictive_maintenance_features/
 │   ├── 06_trained_ml_models/
 │   ├── 07_asset_risk_predictions/
-│   └── 07_data_quality_reports/
+│   ├── 07_data_quality_reports/
+│   └── 09_semantic_search_index/  # Compressed vector index and metadata
 ├── docs/                        # Project documentation
 ├── notebooks/                   # Engineering notebooks
 ├── reports/                     # Analytical reports
@@ -407,8 +459,8 @@ For engineering and training work, install the root project dependencies and pac
 
 ## Roadmap
 
-- Hosted Llama-powered assistant and semantic maintenance case retrieval.
-- AssetGuard pipeline registration, expanded automated tests and CI validation.
+- Validate final public semantic RAG deployment and reconcile ONNX runtime dependencies.
+- Complete human relevance assessment, runtime memory benchmarks, AssetGuard pipeline registration and automated CI validation.
 - Operational data refresh, model monitoring and calibrated risk scoring.
 - Final Power BI relationship and KPI certification, report publication, and Microsoft Fabric/Azure SQL integration subject to access and cost constraints.
 
