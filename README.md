@@ -20,6 +20,9 @@ The platform addresses three operational questions: Which assets need attention?
 
 | Indicator | Result |
 |---|---:|
+| Profiled source records | 9,705,756 |
+| Gold analytical tables | 17 |
+| Combined Gold table rows | 8,855,330 |
 | Historical work orders in Gold layer | 2,231,535 |
 | Asset-month modeling observations | 2,733,245 |
 | Engineered model features | 12 |
@@ -62,6 +65,172 @@ The engineering workflow uses a medallion architecture, Kedro project structure,
 - **AssetGuard:** historical feature generation, model evaluation, risk scoring and interpretation.
 
 The project incorporates NYC Parks asset management and maintenance records, with additional NYC 311 and AI4I data engineering work in the broader project. The reported AssetGuard baseline uses historical work-order activity, not AI4I physical failure labels.
+
+## End-to-end implementation: source to decision support
+
+### 1. Source acquisition and profiling
+
+The consolidated source inventory reconciled **9,705,756 records across eight datasets** (records across different grains, not unique assets).
+
+| Source | Records | Role |
+|---|---:|---|
+| NYC Parks AMPS Assets | 148,522 | Asset inventory |
+| AMPS Work Orders | 2,231,535 | Maintenance events |
+| AMPS Labor | 3,230,423 | Labor bookings and costs |
+| AMPS Transactions | 755,122 | Transaction headers |
+| AMPS Transaction Details | 2,301,927 | Material and transaction lines |
+| NYC 311 Service Requests | 875,134 | Service demand context |
+| Parks Inspections | 153,093 | Inspection and condition context |
+| AI4I Predictive Maintenance | 10,000 | Separate synthetic ML benchmark dataset |
+
+Source profiling covers schema consistency, missingness, identifiers, row reconciliation and cross-dataset reference integrity. NYC 311 and inspections are supplementary domains; their cross-source relationships are not assumed to be fully validated. AI4I identifiers are not joined to NYC Parks assets.
+
+[Consolidated source quality report](reports/data_profiling_reports/assetfusion360_consolidated_source_quality_report.md) · [Profiling reports and ingestion manifests](reports/data_profiling_reports/)
+
+### 2. Local medallion engineering
+
+| Stage | Implementation |
+|---|---|
+| Raw/source | Preserve extracts and source batch provenance |
+| Bronze | Source-aligned Parquet ingestion, schema and count checks |
+| Silver | Explicit types, normalized keys, timestamp parsing, quality flags and preservation of unmatched records |
+| Gold | Dimensional tables, resolved identity mappings, detailed facts and monthly KPI aggregates |
+
+Kedro provides the project structure and configuration; PySpark handles scalable transformations. The local Gold audit records **17 tables, 8,855,330 combined table rows and 1,720 Parquet files**, with status `PASS_WITH_DOCUMENTED_DATA_QUALITY_EXCEPTIONS`. Combined counts include facts, dimensions and summaries and must not be interpreted as unique business events.
+
+Notable quality exceptions retained rather than silently discarded:
+
+- One ambiguous asset business code, affecting 400 work orders with unresolved asset identities.
+- 13,078 labor records without a resolved work-order identity.
+- 1,391 transaction detail records without a resolved transaction identity.
+- 1,492,918 transaction detail records without a resolved work-order identity.
+
+[Gold warehouse quality audit](reports/data_quality/gold_warehouse_quality_audit.json) · [Warehouse handoff](reports/data_model/AssetFusion360_Local_Warehouse_Handoff.md) · [Gold lineage](reports/data_model/AssetFusion360_Gold_Data_Lineage.md)
+
+### 3. Databricks cloud engineering and workflow orchestration
+
+The Databricks implementation moves the validated local AMPS analytical data into managed Delta tables and develops reproducible transformations in an isolated staging schema. The cloud setup notebook creates the schema and managed volume, imports five Bronze, five Silver and 17 Gold datasets, and avoids overwriting existing tables.
+
+| Cloud component | Purpose |
+|---|---|
+| `workspace.assetfusion360` | Reference/production-named schema: 27 Bronze, Silver and Gold tables |
+| `workspace.assetfusion360.source_files` | Managed volume for uploaded Parquet inputs |
+| `workspace.assetfusion360_staging` | Isolated Silver and Gold transformation outputs |
+| PySpark / Spark SQL | Typed transformations, joins, identity resolution and aggregation |
+| Delta Lake | Managed tables, schema inspection and transaction history |
+| Databricks Jobs | Dependency-driven transformation and validation notebooks |
+
+The production/staging notebooks use schema and row-count assertions and bidirectional `exceptAll` comparisons to check complete record equivalence, including duplicates. The final read-only safety audit is designed to inspect 49 Delta table histories (27 reference plus 22 staging) and 22 production/staging schema pairs. The repository contains the audit code; these counts describe its validation scope, not an independently verified current cloud run.
+
+```mermaid
+flowchart TD
+    A[Managed volume: Parquet inputs] --> B[Reference Bronze Delta]
+    B --> C[Validate inputs]
+    C --> D[Silver assets]
+    D --> E[Silver work orders]
+    E --> F[Silver transactions]
+    F --> G[Silver transaction details]
+    G --> H[Silver labor]
+    H --> I[Validate all Silver]
+    I --> J[Gold readiness]
+    J --> K[Gold dependency map]
+    K --> L[Gold staging transformations]
+    L --> M[Reference vs staging reconciliation]
+    M --> N[End-to-end audit and documentation]
+```
+
+The committed validation job defines the sequential dependencies through Gold readiness and dependency mapping. Gold staging publication and final audit are documented in separate notebooks; the diagram shows the broader development lifecycle, not a claim that all steps run in one scheduled job.
+
+**Databricks implementation resources**
+
+- [Cloud setup, Silver/Gold transformations and staging notebooks](notebooks/Databricks/AssetFusion360/)
+- [Workflow notebooks: input validation through Gold dependency mapping](notebooks/Databricks/AssetFusion360_Workflows/)
+- [End-to-end audit, final quality/safety audit and documentation](notebooks/Databricks/AssetFusion360_Audit/)
+- [Data pipeline validation job YAML](conf/Databricks/Jobs/assetfusion360_data_pipeline_job.yml)
+- [Bronze/Silver/Gold validation job YAML](conf/Databricks/Jobs/assetfusion360_validation_job.yml)
+
+Workspace-specific notebook paths and compute access must be configured for reproduction in another Databricks environment.
+
+### 4. Gold dimensional warehouse and Power BI semantic model
+
+The warehouse is organized as a multi-fact dimensional model with conformed dimensions, an asset-code bridge, detailed facts and separate monthly summaries.
+
+| Table | Rows | Business grain / role |
+|---|---:|---|
+| dim_asset | 148,522 | Asset identity |
+| bridge_asset_code | 148,521 | Business-code resolution |
+| fact_workorders | 2,231,535 | Work order |
+| fact_labor | 3,230,423 | Labor booking |
+| fact_transactions | 755,122 | Transaction header |
+| fact_transaction_details | 2,301,927 | Transaction detail line |
+| dim_date | 9,356 | Calendar date |
+| dim_workorder_type | 7 | Work-order type |
+| dim_workorder_priority | 11 | Work-order priority |
+| dim_transaction_type | 6 | Transaction type |
+| dim_transaction_status | 3 | Transaction status |
+| dim_detail_type | 6 | Detail type |
+| dim_part | 14,423 | Part code |
+| gold_workorder_monthly_kpis | 1,280 | Monthly work-order summary |
+| gold_labor_monthly_kpis | 232 | Monthly labor summary |
+| gold_transaction_monthly_kpis | 1,689 | Monthly transaction summary |
+| gold_material_monthly_kpis | 12,267 | Monthly material summary |
+
+#### Relationship design
+
+The documented ER model contains 15 proposed relationships. The following simplified diagram expresses the design candidates, not a certified export of the final PBIX relationship configuration.
+
+```mermaid
+flowchart LR
+    A[dim_asset] -.-> B[bridge_asset_code]
+    B -.-> W[fact_workorders]
+    WT[dim_workorder_type] --> W
+    WP[dim_workorder_priority] --> W
+    W -.-> L[fact_labor]
+    W -.-> TD[fact_transaction_details]
+    T[fact_transactions] -.-> TD
+    TT[dim_transaction_type] --> T
+    TS[dim_transaction_status] --> T
+    P[dim_part] --> TD
+    DT[dim_detail_type] --> TD
+    D[dim_date] --> W
+    D --> L
+    D --> T
+    D --> TD
+```
+
+Core relationship rules:
+
+- Prefer one-to-many, single-direction dimension-to-fact filtering with verified unique parent keys.
+- Use date-only keys derived from workorder_date, labor_date, transaction_date and detail_date against dim_date.calendar_date.
+- Preserve unique asset identities; resolve business codes through the bridge, never duplicate work orders through ambiguous joins.
+- Validate work-order and transaction parent keys before enabling detailed fact-to-fact relationships; avoid simultaneous active paths that create ambiguous date filters.
+- Preserve unmatched records and map missing priority/part members explicitly.
+- Keep monthly KPI tables at their original aggregation grain.
+
+[Full ER diagram source](reports/data_model/AssetFusion360_Gold_ER_Diagram.mmd) · [ER modeling notes](reports/data_model/AssetFusion360_ER_Modeling_Notes.md) · [Relationship specification](reports/data_model/gold_relationship_specification.json) · [Semantic model implementation plan](reports/data_model/AssetFusion360_Semantic_Model_Plan.md)
+
+### 5. Power BI operational reporting
+
+The Power BI Desktop report was developed to explore the Gold analytical model through a branded navigation experience and operational report pages.
+
+| Report area | Business purpose |
+|---|---|
+| Home / navigation | Access the report's operational analysis areas |
+| Work Order Analytics | Analyze maintenance volume, work-order categories, priorities and temporal trends |
+| Labor Analytics | Analyze labor activity, hours and cost patterns |
+| Transaction Analytics | Explore transactions and material-related activity |
+
+The reporting design supports date-based filtering, contextual drill-down and DAX measures at the appropriate fact grain. Measures should reconcile with the Gold summaries before publication. Signed labor hours/costs and material quantities must be preserved; incompatible units must not be summed, unit prices must not be summed as expenses, and quantity × unit price is not a certified actual maintenance expense without business validation.
+
+The local Power BI report exists, but its approximately 468 MiB PBIX is not included in ordinary Git storage. The repository contains the model design and BI supporting assets, not the final PBIX relationship export, DAX measure catalog or a public Power BI report URL. Final active/inactive relationships and KPI reconciliation therefore remain subject to verification. The Streamlit link provides a separate public AssetGuard experience, not an embedded Power BI report.
+
+[Power BI supporting assets](PowerBI_MS_Fabric/) · [Monthly KPI manifests](reports/data_profiling_reports/) · [Semantic model plan](reports/data_model/AssetFusion360_Semantic_Model_Plan.md)
+
+### 6. From reporting to predictive intelligence
+
+The detailed Gold work-order history provides the event-level input to AssetGuard. The model uses historical frequency and recency features, produces a 30-day corrective-maintenance-demand score, and supplies SHAP drivers and prioritized asset registers. DuckDB retrieves supporting maintenance cases, and Streamlit exposes the results independently of the local Power BI file or Databricks compute.
+
+The following sections document the ML methodology, results, decision-support application and deployment in detail.
 
 ## Machine learning methodology
 
@@ -241,7 +410,7 @@ For engineering and training work, install the root project dependencies and pac
 - Hosted Llama-powered assistant and semantic maintenance case retrieval.
 - AssetGuard pipeline registration, expanded automated tests and CI validation.
 - Operational data refresh, model monitoring and calibrated risk scoring.
-- Further BI KPI validation and cloud integration.
+- Final Power BI relationship and KPI certification, report publication, and Microsoft Fabric/Azure SQL integration subject to access and cost constraints.
 
 ## Author
 
