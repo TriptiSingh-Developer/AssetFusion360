@@ -30,6 +30,11 @@ from assetfusion360.pipelines.assetguard.maintenance_agent import (
     AssetGuardAgent
 )
 
+
+from assetfusion360.pipelines.assetguard.llama_agent import (
+    AssetGuardLlamaAgent
+)
+
 st.set_page_config(
     page_title="AssetFusion360 | AssetGuard",
     page_icon=str(LOGO_PATH) if LOGO_PATH.exists() else "🛡️",
@@ -295,6 +300,35 @@ def run_agent(method, *args):
     finally:
 
         agent.close()
+
+
+
+def run_llama_assistant(question):
+
+    import os
+
+    account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+    api_token = os.getenv("CLOUDFLARE_API_TOKEN")
+
+    try:
+        account_id = st.secrets.get(
+            "CLOUDFLARE_ACCOUNT_ID", account_id
+        )
+        api_token = st.secrets.get(
+            "CLOUDFLARE_API_TOKEN", api_token
+        )
+    except FileNotFoundError:
+        pass
+
+    assistant = AssetGuardLlamaAgent(
+        account_id=account_id,
+        api_token=api_token
+    )
+
+    try:
+        return assistant.run(question)
+    finally:
+        assistant.close()
 
 
 def page_header(title, description):
@@ -1517,7 +1551,7 @@ elif page == "AI Assistant":
 
     page_header(
         "AssetGuard Intelligence Assistant",
-        "Tool-based maintenance decision support."
+        "Generative AI and evidence-grounded maintenance decision support."
     )
 
     st.info(
@@ -1533,6 +1567,30 @@ elif page == "AI Assistant":
 
 
     def render_response(result):
+
+        if result.get("llm_status") == "success":
+
+            st.caption(
+                "Powered by Meta Llama 4 Scout | Cloudflare Workers AI"
+            )
+
+            st.subheader("AI-Generated Maintenance Assessment")
+
+            st.markdown(result["llm_answer"])
+
+            st.divider()
+
+            st.subheader("Supporting Analytical Evidence")
+
+        elif result.get("llm_status") == "fallback":
+
+            st.info(
+                result.get(
+                    "llm_message",
+                    "Displaying original analytical evidence."
+                )
+            )
+
 
         intent = result.get(
             "intent",
@@ -1751,10 +1809,7 @@ elif page == "AI Assistant":
 
             try:
 
-                result = run_agent(
-                    "run",
-                    question
-                )
+                result = run_llama_assistant(question)
 
             except Exception as error:
 
@@ -1779,8 +1834,8 @@ elif page == "AI Assistant":
         st.rerun()
 
     st.caption(
-        "Current implementation: deterministic tool orchestration. "
-        "Generative LLM integration is a separate extension."
+        "Powered by Meta Llama 4 Scout, DuckDB, XGBoost and SHAP. "
+        "Human review is required for maintenance decisions."
     )
 
 
