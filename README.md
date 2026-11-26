@@ -1,5 +1,11 @@
 # AssetFusion360
 
+[![Open Live Application](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://assetfusion360.streamlit.app/)
+
+**[Launch AssetFusion360 — Live Application](https://assetfusion360.streamlit.app/)**
+
+Explore the interactive AssetGuard maintenance intelligence platform, including asset risk analytics, model explainability, maintenance case search and decision support.
+
 [![Powered by Kedro](https://img.shields.io/badge/powered_by-kedro-ffc900?logo=kedro)](https://kedro.org)
 
 ## Overview
