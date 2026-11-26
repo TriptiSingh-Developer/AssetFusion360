@@ -183,3 +183,6 @@ __pycache__/
 # Local experiment tracking database
 assetguard_mlflow.db
 
+
+# Local semantic embedding checkpoints
+data/09_semantic_search_index/embedding_checkpoints/

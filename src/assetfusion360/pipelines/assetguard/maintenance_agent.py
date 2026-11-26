@@ -124,6 +124,20 @@ class AssetGuardAgent:
     # TOOL 1: ASSET RISK ANALYSIS
     # --------------------------------------------------------
 
+
+    def resolve_asset_code(self, asset_code):
+
+        return self.con.execute(
+            '''
+            SELECT DISTINCT
+                asset_identity,
+                asset_code
+            FROM predictions
+            WHERE UPPER(asset_code) = UPPER(?)
+            ''',
+            [asset_code.strip()]
+        ).df()
+
     def get_asset_risk(self, asset_id):
 
         return self.con.execute("""
@@ -430,7 +444,64 @@ class AssetGuardAgent:
 
         question = question.strip()
 
+
+        # Recognize structured asset codes.
+
+        asset_codes = re.findall(
+            r"\b[A-Z0-9]+(?:-[A-Z0-9]+){2,}\b",
+            question,
+            flags=re.IGNORECASE
+        )
+
+        asset_codes = list(dict.fromkeys(
+            value.upper() for value in asset_codes
+        ))
+
+        if len(asset_codes) > 1:
+            return {
+                "intent": "unsupported_question",
+                "message":
+                    "Please ask about one asset at a time."
+            }
+
+        if asset_codes:
+
+            asset_code = asset_codes[0]
+
+            matches = self.resolve_asset_code(asset_code)
+
+            if matches.empty:
+
+                return {
+                    "intent": "asset_not_found",
+                    "message":
+                        f"Asset code {asset_code} is not "
+                        "in the scored population."
+                }
+
+            if len(matches) > 1:
+
+                return {
+                    "intent": "ambiguous_asset_code",
+                    "message":
+                        "Multiple assets share this code. "
+                        "Please provide the numerical asset ID.",
+                    "data": matches
+                }
+
+            asset_id = int(
+                matches.iloc[0]["asset_identity"]
+            )
+
+            question = re.sub(
+                r"\b" + re.escape(asset_code) + r"\b",
+                f"asset {asset_id}",
+                question,
+                flags=re.IGNORECASE
+            )
+
         text = question.lower()
+
 
         if "similar" in text:
 
@@ -525,6 +596,34 @@ class AssetGuardAgent:
                 "intent": "portfolio_summary",
                 "data":
                     self.get_portfolio_summary()
+            }
+
+
+        # Recognize standalone maintenance descriptions.
+
+        maintenance_pattern = (
+            r"\b(leak\w*|broken|damaged|blocked|clogged|"
+            r"malfunction\w*|repair|cracked|rusted|"
+            r"failure|faulty|defective|not working|"
+            r"not cooling|unable to flush)\b"
+        )
+
+        equipment_pattern = (
+            r"\b(pipe\w*|plumbing|toilet\w*|door\w*|"
+            r"lock\w*|playground|equipment|bench\w*|"
+            r"electrical|power|lighting|light\w*|"
+            r"drain\w*|hvac|air conditioning|"
+            r"roof\w*|fence\w*|water|pump\w*)\b"
+        )
+
+        if (
+            re.search(maintenance_pattern, text)
+            and re.search(equipment_pattern, text)
+        ):
+
+            return {
+                "intent": "similar_workorders",
+                "data": self.find_similar_workorders(question)
             }
 
         return {

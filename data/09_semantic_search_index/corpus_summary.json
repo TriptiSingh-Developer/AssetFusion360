@@ -1,0 +1,8 @@
+{
+    "unique_descriptions": 849667,
+    "represented_workorders": 1059478,
+    "forecast_cutoff": "2026-10-25",
+    "embedding_model": "all-MiniLM-L6-v2",
+    "embedding_dimension": 384,
+    "metadata_size_mb": 40.98
+}
