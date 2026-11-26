@@ -14,9 +14,9 @@ import hashlib
 import faiss
 import numpy as np
 import pandas as pd
-import torch
 
-from sentence_transformers import SentenceTransformer
+
+from .onnx_embedder import MiniLMONNXEmbedder
 
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -34,7 +34,7 @@ class AssetGuardSemanticSearch:
 
     def __init__(self):
 
-        torch.set_num_threads(2)
+
 
         faiss.omp_set_num_threads(2)
 
@@ -81,10 +81,7 @@ class AssetGuardSemanticSearch:
             np.arange(len(self.metadata))
         )
 
-        self.model = SentenceTransformer(
-            self.config["embedding_model"],
-            device="cpu"
-        )
+        self.model = MiniLMONNXEmbedder()
 
     def search(self, question, limit=10):
 
@@ -98,12 +95,7 @@ class AssetGuardSemanticSearch:
 
         question = question[:500]
 
-        query_vector = self.model.encode(
-            [question],
-            normalize_embeddings=True,
-            convert_to_numpy=True,
-            show_progress_bar=False
-        )
+        query_vector = self.model.encode([question])
 
         query_vector = np.ascontiguousarray(
             query_vector,
