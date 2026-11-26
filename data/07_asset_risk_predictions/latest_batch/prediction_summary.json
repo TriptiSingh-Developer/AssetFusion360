@@ -1,0 +1,42 @@
+{
+    "status": "PASSED",
+    "model": "XGBoost",
+    "total_scored_assets": 14983,
+    "high_risk_assets": 2415,
+    "decision_threshold": 0.8067269325256348,
+    "prediction_start": "2026-10-25 00:00:00",
+    "prediction_end_exclusive": "2026-11-24 00:00:00",
+    "score_calibrated": false,
+    "risk_distribution": [
+        {
+            "risk_category": "High",
+            "assets": 2415,
+            "average_score": 0.913252055644989,
+            "minimum_score": 0.8068521618843079,
+            "maximum_score": 0.9986194372177124
+        },
+        {
+            "risk_category": "Low",
+            "assets": 8133,
+            "average_score": 0.02857196144759655,
+            "minimum_score": 0.00587252713739872,
+            "maximum_score": 0.24622893333435059
+        },
+        {
+            "risk_category": "Medium",
+            "assets": 2077,
+            "average_score": 0.6560261845588684,
+            "minimum_score": 0.500225841999054,
+            "maximum_score": 0.8066056966781616
+        },
+        {
+            "risk_category": "Moderate",
+            "assets": 2358,
+            "average_score": 0.3788435757160187,
+            "minimum_score": 0.25022074580192566,
+            "maximum_score": 0.4998587667942047
+        }
+    ],
+    "eligibility": "Assets with maintenance history in previous 365 days",
+    "forecast_type": "As-of-data-cutoff forecast"
+}

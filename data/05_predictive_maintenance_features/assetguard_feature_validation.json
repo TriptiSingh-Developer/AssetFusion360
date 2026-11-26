@@ -1,0 +1,43 @@
+{
+    "status": "PASSED",
+    "duplicate_groups": 0,
+    "invalid_historical_features": 0,
+    "incomplete_target_windows": 0,
+    "latest_observed_event": "2026-10-24",
+    "observation_days": 365,
+    "prediction_days": 30,
+    "event_date_source": "created_at",
+    "target": "target_cm_next_30d",
+    "dataset_summary": [
+        {
+            "dataset_split": "test",
+            "records": 353352,
+            "distinct_assets": 30489,
+            "positive_targets": 39228.0,
+            "negative_targets": 314124.0,
+            "positive_target_pct": 11.1017,
+            "first_snapshot": "2025-01-01 00:00:00",
+            "last_snapshot": "2026-09-01 00:00:00"
+        },
+        {
+            "dataset_split": "train",
+            "records": 2177708,
+            "distinct_assets": 98714,
+            "positive_targets": 197331.0,
+            "negative_targets": 1980377.0,
+            "positive_target_pct": 9.0614,
+            "first_snapshot": "2015-01-01 00:00:00",
+            "last_snapshot": "2023-12-01 00:00:00"
+        },
+        {
+            "dataset_split": "validation",
+            "records": 202185,
+            "distinct_assets": 24656,
+            "positive_targets": 22985.0,
+            "negative_targets": 179200.0,
+            "positive_target_pct": 11.3683,
+            "first_snapshot": "2024-01-01 00:00:00",
+            "last_snapshot": "2024-12-01 00:00:00"
+        }
+    ]
+}

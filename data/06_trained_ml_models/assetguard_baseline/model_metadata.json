@@ -1,0 +1,25 @@
+{
+    "model_name": "XGBoost",
+    "features": [
+        "wo_count_30d",
+        "wo_count_90d",
+        "wo_count_180d",
+        "wo_count_365d",
+        "cm_count_30d",
+        "cm_count_90d",
+        "cm_count_365d",
+        "days_since_last_wo",
+        "days_since_last_cm",
+        "no_cm_history_365d",
+        "corrective_ratio_90d",
+        "snapshot_month"
+    ],
+    "target": "target_cm_next_30d",
+    "threshold": 0.8067269325256348,
+    "selection_metric": "average_precision",
+    "prediction_window_days": 30,
+    "mlflow_run_id": "6f83a469f336493582d77fa2b0a83ba4",
+    "random_state": 42,
+    "score_calibrated": false,
+    "model_stage": "baseline"
+}

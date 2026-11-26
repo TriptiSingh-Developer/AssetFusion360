@@ -1,0 +1,13 @@
+feature,mean_absolute_shap
+cm_count_365d,1.5829477
+days_since_last_cm,0.654077
+wo_count_365d,0.316812
+days_since_last_wo,0.25854766
+snapshot_month,0.09719359
+wo_count_180d,0.06642987
+cm_count_90d,0.04743092
+no_cm_history_365d,0.03365421
+wo_count_90d,0.033396523
+corrective_ratio_90d,0.021783179
+cm_count_30d,0.016752658
+wo_count_30d,0.010807386
